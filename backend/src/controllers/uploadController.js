@@ -1,5 +1,3 @@
-const path = require("path");
-
 const uploadImage = async (req, res) => {
   try {
     const { type } = req.params;
@@ -21,30 +19,29 @@ const uploadImage = async (req, res) => {
       });
     }
 
-    // Build multipart form data to send to the PHP receiver
+    const typeMap = {
+      product: "products",
+      category: "categories",
+      setting: "settings",
+      page: "pages",
+      banner: "banners",
+    };
+    const mappedType = typeMap[type] || (type.endsWith("s") ? type : `${type}s`);
+
     const formData = new FormData();
     const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
-    formData.append("file", blob, req.file.originalname);
-    formData.append("type", type);
+    formData.append("image", blob, req.file.originalname);
+    formData.append("type", mappedType);
+    formData.append("secret", cpanelUploadSecret);
 
     const uploadResponse = await fetch(cpanelUploadUrl, {
       method: "POST",
-      headers: {
-        "X-Upload-Secret": cpanelUploadSecret,
-      },
       body: formData,
     });
 
-    let uploadData;
-    const contentType = uploadResponse.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      uploadData = await uploadResponse.json();
-    } else {
-      const text = await uploadResponse.text();
-      uploadData = { message: text };
-    }
+    const uploadData = await uploadResponse.json();
 
-    if (!uploadResponse.ok || !uploadData.success) {
+    if (!uploadData.success) {
       return res.status(uploadResponse.status || 500).json({
         success: false,
         message: uploadData.message || "Failed to upload image to cPanel",
