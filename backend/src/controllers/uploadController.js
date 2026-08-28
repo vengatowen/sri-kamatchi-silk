@@ -11,42 +11,28 @@ const uploadImage = async (req, res) => {
       });
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseBucket = process.env.SUPABASE_BUCKET || "sri-kamatchi-images";
+    const cpanelUploadUrl = process.env.CPANEL_UPLOAD_URL;
+    const cpanelUploadSecret = process.env.CPANEL_UPLOAD_SECRET;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!cpanelUploadUrl || !cpanelUploadSecret) {
       return res.status(500).json({
         success: false,
-        message: "Server is not configured for image uploads (missing Supabase configuration)",
+        message: "Server is not configured for image uploads (missing cPanel configuration)",
       });
     }
 
-    let folder = `${type}s`;
-    if (type === "category") {
-      folder = "categories";
-    }
+    // Build multipart form data to send to the PHP receiver
+    const formData = new FormData();
+    const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+    formData.append("file", blob, req.file.originalname);
+    formData.append("type", type);
 
-    // Generate unique filename using original filename & timestamp
-    const baseName = req.file.originalname.split(".")[0].replace(/\s+/g, "-").toLowerCase();
-    let extension = path.extname(req.file.originalname).toLowerCase();
-    if (!extension) {
-      if (req.file.mimetype === "image/png") extension = ".png";
-      else if (req.file.mimetype === "image/webp") extension = ".webp";
-      else extension = ".jpg";
-    }
-    const uniqueFilename = `${Date.now()}-${baseName}${extension}`;
-
-    const uploadUrl = `${supabaseUrl}/storage/v1/object/${supabaseBucket}/${folder}/${uniqueFilename}`;
-
-    const uploadResponse = await fetch(uploadUrl, {
+    const uploadResponse = await fetch(cpanelUploadUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${supabaseServiceKey}`,
-        "apikey": supabaseServiceKey,
-        "Content-Type": req.file.mimetype,
+        "X-Upload-Secret": cpanelUploadSecret,
       },
-      body: req.file.buffer, // Raw file buffer in memory
+      body: formData,
     });
 
     let uploadData;
@@ -58,21 +44,19 @@ const uploadImage = async (req, res) => {
       uploadData = { message: text };
     }
 
-    if (!uploadResponse.ok) {
-      return res.status(uploadResponse.status).json({
+    if (!uploadResponse.ok || !uploadData.success) {
+      return res.status(uploadResponse.status || 500).json({
         success: false,
-        message: uploadData.message || "Failed to upload image to Supabase",
+        message: uploadData.message || "Failed to upload image to cPanel",
         error: uploadData,
       });
     }
 
-    const imageUrl = `${supabaseUrl}/storage/v1/object/public/${supabaseBucket}/${folder}/${uniqueFilename}`;
-
     res.status(200).json({
       success: true,
       message: "Image uploaded successfully",
-      imageUrl,
-      fileName: uniqueFilename,
+      imageUrl: uploadData.imageUrl,
+      fileName: uploadData.fileName,
     });
   } catch (error) {
     res.status(500).json({
@@ -86,4 +70,3 @@ const uploadImage = async (req, res) => {
 module.exports = {
   uploadImage,
 };
-
