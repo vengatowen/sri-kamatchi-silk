@@ -26,7 +26,8 @@ const uploadImage = async (req, res) => {
       page: "pages",
       banner: "banners",
     };
-    const mappedType = typeMap[type] || (type.endsWith("s") ? type : `${type}s`);
+    const mappedType =
+      typeMap[type] || (type.endsWith("s") ? type : `${type}s`);
 
     const formData = new FormData();
     const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
