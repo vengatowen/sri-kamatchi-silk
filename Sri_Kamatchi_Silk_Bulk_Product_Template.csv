@@ -1,10 +1,5 @@
-﻿Product Name,Slug,Category Name,Price,Discount Price,Stock,Fabric,Color,Occasion,Is Trending,Is Featured,Is Offer,Image URL,Description
-Kanchipuram Pure Zari Bridal Saree,,Silk Sarees,18500,15000,12,Pure Silk,Maroon Gold,Wedding,TRUE,TRUE,TRUE,https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800,Exquisite handwoven Kanchipuram silk drape with 24k gold leaf zari brocade pallu.
-Banarasi Brocade Silk Saree,,Silk Sarees,14500,12000,8,Banarasi Silk,Royal Blue,Festive,TRUE,FALSE,TRUE,https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800,Classic Banarasi kadwa weave with silver zari floral motifs across royal blue body.
-Mysuru Royal Pure Crepe Silk Saree,,Soft Silks,9500,7999,15,Crepe Silk,Mustard Gold,Party,FALSE,TRUE,FALSE,,Lightweight Karnataka Mysore crepe silk with rich woven zari border.
-Soft Chanderi Zari Work Saree,,Cotton Silks,6800,5400,20,Chanderi,Pastel Pink,Casual,FALSE,FALSE,TRUE,,Breezy handloom Chanderi silk cotton saree adorned with delicate coin bootis.
-Organza Floral Printed Elegance Saree,,Fancy Sarees,8200,6999,10,Organza,Mint Green,Festive,TRUE,FALSE,FALSE,,Sheer organza saree highlighting digital botanical artwork and embroidered border.
-Tussar Silk Handloom Motif Saree,,Tussar Silks,11200,9500,7,Tussar Silk,Rust Orange,Formal,FALSE,TRUE,TRUE,,Wild Tussar silk drape showcasing textured natural golden luster and kantha stitch details.
-Uppada Lightweight Pure Silk Saree,,Silk Sarees,16800,13999,5,Uppada Silk,Peacock Blue,Reception,TRUE,TRUE,FALSE,,Intricate jamdani technique woven Uppada silk with silver water zari highlights.
-Traditional Kanchi Cotton Silk Saree,,Cotton Silks,4500,3800,25,Cotton Silk,Terracotta,Casual,FALSE,FALSE,FALSE,,Daily wear breathable cotton silk saree styled with traditional temple border.
-Kalamkari Hand Painted Pure Silk Saree,,Silk Sarees,12999,10999,9,Pure Silk,Multi Color,Heritage,TRUE,TRUE,TRUE,,Mythological scenes hand-painted by artisan masters using natural vegetable dyes.
+Product Name,Slug,Category Name,Price,Discount Price,Stock,Fabric,Color,Occasion,Is Trending,Is Featured,Is Offer,Image URL,Description
+Pochampalli Silk Saree,,Pochampalli Silks,300,250,10,Pure Silk,Red,Wedding,TRUE,TRUE,FALSE,pochampalli-red-1.jpg|pochampalli-red-2.jpg,Classic Pochampalli ikat saree in rich red with traditional geometric weave.
+Pochampalli Silk Saree,,Pochampalli Silks,300,250,8,Pure Silk,Green,Wedding,TRUE,TRUE,FALSE,pochampalli-green-1.jpg|pochampalli-green-2.jpg,Classic Pochampalli ikat saree — green colour variant of the same design.
+Pochampalli Silk Saree,,Pochampalli Silks,300,250,6,Pure Silk,Blue,Wedding,TRUE,TRUE,FALSE,pochampalli-blue-1.jpg,Classic Pochampalli ikat saree — blue colour variant of the same design.
+Kanchipuram Pure Zari Bridal Saree,,Silk Sarees,18500,15000,12,Pure Silk,Maroon Gold,Wedding,TRUE,TRUE,TRUE,kanchipuram-maroon-1.jpg,Exquisite handwoven Kanchipuram silk drape with gold zari brocade pallu.

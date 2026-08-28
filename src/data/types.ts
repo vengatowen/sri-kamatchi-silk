@@ -1,3 +1,11 @@
+export interface ProductVariant {
+  id: string;
+  color: string;
+  images: string[];
+  stock: number;
+  sortOrder?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -24,6 +32,8 @@ export interface Product {
   newArrival?: boolean;
   offer?: boolean;
   bestSeller?: boolean;
+  variants?: ProductVariant[];
+  selectedVariantId?: string;
 }
 
 export interface Subcategory {

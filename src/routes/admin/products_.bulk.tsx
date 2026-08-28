@@ -18,6 +18,24 @@ import {
 import * as XLSX from "xlsx";
 import { API_BASE, safeFetchJson } from "@/lib/api";
 
+const CPANEL_IMAGE_BASE = "https://img.srikamatchisilks.com/uploads/products";
+
+/** Accept full URL or filename (1.jpg) / pipe gallery (1.jpg|2.jpg) */
+function resolveCsvImages(raw: string): string {
+  if (!raw) return "";
+  const parts = raw
+    .split(/[|,;]+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => {
+      if (/^https?:\/\//i.test(p)) return p;
+      const file = p.replace(/^\/+/, "").replace(/^uploads\/products\//i, "").replace(/^products\//i, "");
+      return `${CPANEL_IMAGE_BASE}/${file}`;
+    });
+  return parts.join("|");
+}
+
+
 export const Route = createFileRoute("/admin/products_/bulk")({
   component: AdminProductsBulk,
 });
@@ -57,7 +75,7 @@ const SAMPLE_PRODUCTS = [
     "Is Trending": "TRUE",
     "Is Featured": "TRUE",
     "Is Offer": "TRUE",
-    "Image URL": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800",
+    "Image URL": "kanchipuram-maroon-1.jpg|kanchipuram-maroon-2.jpg",
     "Description": "Exquisite handwoven Kanchipuram silk drape with 24k gold leaf zari brocade pallu.",
   },
   {
@@ -263,7 +281,7 @@ function AdminProductsBulk() {
       const isTrending = parseBool(row["Is Trending"] ?? row.isTrending);
       const isFeatured = parseBool(row["Is Featured"] ?? row.isFeatured);
       const isOffer = parseBool(row["Is Offer"] ?? row.isOffer);
-      const image = (row["Image URL"] || row.image || row.imageUrl || "").toString().trim();
+      const image = resolveCsvImages((row["Image URL"] || row.image || row.imageUrl || "").toString().trim());
       const description = (row["Description"] || row.description || "").toString().trim();
       const rawSlug = (row["Slug"] || row.slug || "").toString().trim();
 

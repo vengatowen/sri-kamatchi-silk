@@ -59,7 +59,32 @@ function ProductPage() {
   const liveProducts = useMemo(() => {
     if (dbProducts.length === 0) return [];
     return dbProducts.map((p) => {
-      const img = p.image?.startsWith("http") ? p.image : p.image ? `${API_BASE}${p.image}` : "https://placehold.co/600x800/fafaf9/78350f?text=Sri+Kamatchi+Silk";
+      const fallback =
+        "https://placehold.co/600x800/fafaf9/78350f?text=Sri+Kamatchi+Silk";
+      const img = p.image?.startsWith("http")
+        ? p.image
+        : p.image
+          ? `${API_BASE}${p.image}`
+          : fallback;
+
+      const variants = Array.isArray(p.variants)
+        ? p.variants.map((v: any) => ({
+            id: v.id,
+            color: v.color,
+            stock: v.stock ?? 0,
+            images: (Array.isArray(v.images) ? v.images : [])
+              .map((u: string) =>
+                u?.startsWith("http") ? u : u ? `${API_BASE}${u}` : fallback
+              )
+              .filter(Boolean),
+            sortOrder: v.sortOrder ?? 0,
+          }))
+        : [];
+
+      const firstVariant = variants[0];
+      const galleryFromVariants =
+        firstVariant?.images?.length > 0 ? firstVariant.images : [img];
+
       return {
         id: p.id,
         slug: p.slug,
@@ -68,14 +93,14 @@ function ProductPage() {
         discountPrice: p.discountPrice || p.price,
         rating: 4.9,
         reviews: 21,
-        image: img,
-        gallery: [img],
+        image: firstVariant?.images?.[0] || img,
+        gallery: galleryFromVariants,
         category: p.category?.name || "Silk Sarees",
         subcategory: p.category?.name || "Semi Silks",
         subcategorySlug: p.category?.slug || "semi-silks",
-        stock: p.stock,
+        stock: firstVariant ? firstVariant.stock : p.stock,
         fabric: p.fabric || "Pure Silk",
-        color: p.color || "Gold",
+        color: firstVariant?.color || p.color || "Gold",
         sareeLength: p.sareeLength || "6.3 metres",
         blouseLength: p.blouseLength || "0.8 metres",
         blouseIncluded: p.blouseIncluded !== false,
@@ -85,7 +110,13 @@ function ProductPage() {
         newArrival: true,
         description: p.description,
         categoryId: p.categoryId,
-        occasion: ["Wedding", "Reception"],
+        occasion: p.occasion
+          ? Array.isArray(p.occasion)
+            ? p.occasion
+            : [p.occasion]
+          : ["Wedding", "Reception"],
+        variants,
+        selectedVariantId: firstVariant?.id,
       };
     });
   }, [dbProducts]);
@@ -97,6 +128,46 @@ function ProductPage() {
   const { addToCart, toggleWishlist, isWishlisted } = useStore();
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+
+  // When product loads / changes, pick first variant
+  useEffect(() => {
+    if (!product) return;
+    if (product.variants && product.variants.length > 0) {
+      setSelectedVariantId(product.variants[0].id);
+    } else {
+      setSelectedVariantId(null);
+    }
+    setActiveImg(0);
+  }, [product?.id]);
+
+  const selectedVariant =
+    product?.variants?.find((v) => v.id === selectedVariantId) ||
+    product?.variants?.[0] ||
+    null;
+
+  const displayGallery =
+    selectedVariant?.images && selectedVariant.images.length > 0
+      ? selectedVariant.images
+      : product?.gallery && product.gallery.length > 0
+        ? product.gallery
+        : product
+          ? [product.image]
+          : [];
+
+  const displayStock = selectedVariant ? selectedVariant.stock : product?.stock ?? 0;
+  const displayColor = selectedVariant?.color || product?.color || "";
+
+  const productForCart = product
+    ? {
+        ...product,
+        image: displayGallery[0] || product.image,
+        gallery: displayGallery,
+        color: displayColor,
+        stock: displayStock,
+        selectedVariantId: selectedVariant?.id,
+      }
+    : null;
 
   if (isLoading) {
     return (
@@ -142,7 +213,7 @@ function ProductPage() {
       : "Bridal / Wedding / Festival";
 
   const specs = [
-    { label: "Color", value: product.color || "Royal Maroon" },
+    { label: "Color", value: displayColor || "Royal Maroon" },
     { label: "Fabric", value: product.fabric || "Pure Kanchipuram Silk" },
     { label: "Occasion", value: occasionStr },
     { label: "Saree Length", value: product.sareeLength || "5.5 Meters" },
@@ -150,7 +221,7 @@ function ProductPage() {
     { label: "Blouse Included", value: product.blouseIncluded ? "Yes" : "No" },
   ];
 
-  const gallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image];
+  const gallery = displayGallery;
 
   return (
     <StoreLayout>
@@ -237,14 +308,57 @@ function ProductPage() {
               )}
             </div>
             <p className="mt-3 flex items-center gap-2 text-sm">
-              {product.stock > 0 ? (
+              {displayStock > 0 ? (
                 <span className="flex items-center gap-1.5 text-green-700">
-                  <Check size={15} /> In Stock ({product.stock} available)
+                  <Check size={15} /> In Stock ({displayStock} available)
                 </span>
               ) : (
                 <span className="text-destructive">Out of Stock</span>
               )}
             </p>
+
+            {product.variants && product.variants.length > 0 && (
+              <div className="mt-6">
+                <p className="text-sm font-medium text-foreground">
+                  Color: <span className="text-muted-foreground">{displayColor}</span>
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {product.variants.map((v) => {
+                    const active = v.id === selectedVariant?.id;
+                    const thumb = v.images?.[0];
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedVariantId(v.id);
+                          setActiveImg(0);
+                        }}
+                        title={v.color}
+                        className={cn(
+                          "group relative h-14 w-14 overflow-hidden rounded-xl border-2 transition",
+                          active
+                            ? "border-primary ring-2 ring-primary/30"
+                            : "border-border hover:border-gold"
+                        )}
+                      >
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            alt={v.color}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="grid h-full w-full place-items-center text-[10px] font-medium">
+                            {v.color}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 rounded-2xl border border-border bg-card p-5 text-sm">
               {specs.map((s) => (
@@ -287,14 +401,14 @@ function ProductPage() {
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <button
-                onClick={() => addToCart(product, qty)}
+                onClick={() => productForCart && addToCart(productForCart, qty)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-full border border-primary bg-card py-3.5 text-sm font-medium text-primary transition-colors hover:bg-secondary"
               >
                 <ShoppingBag size={17} /> Add to Cart
               </button>
               <Link
                 to="/checkout"
-                onClick={() => addToCart(product, qty)}
+                onClick={() => productForCart && addToCart(productForCart, qty)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-medium text-primary-foreground"
               >
                 <Zap size={17} /> Buy Now

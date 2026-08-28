@@ -1,15 +1,51 @@
 const prisma = require("../config/prisma");
+const {
+  resolveProductImage,
+  resolveProductImages,
+} = require("../utils/imageUrl");
+
+const variantInclude = {
+  variants: { orderBy: { sortOrder: "asc" } },
+};
 
 const createProduct = async (req, res) => {
   try {
+    const body = { ...req.body };
+
+    if (body.image) {
+      body.image = resolveProductImage(body.image);
+    }
+
+    const variantInput = Array.isArray(body.variants) ? body.variants : null;
+    delete body.variants;
+
     const product = await prisma.product.create({
-      data: req.body,
+      data: body,
+    });
+
+    if (variantInput && variantInput.length > 0) {
+      await prisma.productVariant.createMany({
+        data: variantInput.map((v, idx) => ({
+          productId: product.id,
+          color: String(v.color || "").trim() || `Color ${idx + 1}`,
+          images: resolveProductImages(
+            Array.isArray(v.images) ? v.images.join("|") : v.images || v.image || ""
+          ),
+          stock: parseInt(v.stock, 10) || 0,
+          sortOrder: idx,
+        })),
+      });
+    }
+
+    const full = await prisma.product.findUnique({
+      where: { id: product.id },
+      include: { category: true, ...variantInclude },
     });
 
     res.status(201).json({
       success: true,
       message: "Product created successfully",
-      data: product,
+      data: full,
     });
   } catch (error) {
     res.status(500).json({
@@ -23,7 +59,7 @@ const createProduct = async (req, res) => {
 const getProducts = async (req, res) => {
   try {
     const products = await prisma.product.findMany({
-      include: { category: true },
+      include: { category: true, ...variantInclude },
       orderBy: { createdAt: "desc" },
     });
 
@@ -42,11 +78,11 @@ const getProducts = async (req, res) => {
 
 const getSingleProduct = async (req, res) => {
   try {
-    const product = await prisma.product.findUnique({
+    const product = await prisma.product.findFirst({
       where: {
-        id: req.params.id,
+        OR: [{ id: req.params.id }, { slug: req.params.id }],
       },
-      include: { category: true },
+      include: { category: true, ...variantInclude },
     });
 
     if (!product) {
@@ -71,17 +107,45 @@ const getSingleProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
+    const body = { ...req.body };
+    if (body.image) {
+      body.image = resolveProductImage(body.image);
+    }
+
+    const variantInput = Array.isArray(body.variants) ? body.variants : null;
+    delete body.variants;
+
     const product = await prisma.product.update({
-      where: {
-        id: req.params.id,
-      },
-      data: req.body,
+      where: { id: req.params.id },
+      data: body,
+    });
+
+    if (variantInput) {
+      await prisma.productVariant.deleteMany({ where: { productId: product.id } });
+      if (variantInput.length > 0) {
+        await prisma.productVariant.createMany({
+          data: variantInput.map((v, idx) => ({
+            productId: product.id,
+            color: String(v.color || "").trim() || `Color ${idx + 1}`,
+            images: resolveProductImages(
+              Array.isArray(v.images) ? v.images.join("|") : v.images || v.image || ""
+            ),
+            stock: parseInt(v.stock, 10) || 0,
+            sortOrder: idx,
+          })),
+        });
+      }
+    }
+
+    const full = await prisma.product.findUnique({
+      where: { id: product.id },
+      include: { category: true, ...variantInclude },
     });
 
     res.json({
       success: true,
       message: "Product updated successfully",
-      data: product,
+      data: full,
     });
   } catch (error) {
     res.status(500).json({
@@ -94,11 +158,8 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    await prisma.product.delete({
-      where: {
-        id: req.params.id,
-      },
-    });
+    await prisma.productVariant.deleteMany({ where: { productId: req.params.id } });
+    await prisma.product.delete({ where: { id: req.params.id } });
 
     res.json({
       success: true,
@@ -123,19 +184,23 @@ const createProductBulk = async (req, res) => {
       });
     }
 
-    // Fetch existing categories for mapping
     const existingCategories = await prisma.category.findMany();
     const categoryMap = new Map();
     existingCategories.forEach((cat) => {
       categoryMap.set(cat.name.trim().toLowerCase(), cat);
     });
 
-    // Fetch existing product slugs to prevent collisions
-    const existingProducts = await prisma.product.findMany({ select: { slug: true } });
+    const existingProducts = await prisma.product.findMany({
+      select: { slug: true, name: true, id: true },
+    });
     const usedSlugs = new Set(existingProducts.map((p) => p.slug));
+    const productsByName = new Map(
+      existingProducts.map((p) => [p.name.trim().toLowerCase(), p])
+    );
 
     const validationErrors = [];
-    const processedProducts = [];
+    // Group rows by product name for variants
+    const groups = new Map();
 
     const toBool = (val) => {
       if (typeof val === "boolean") return val;
@@ -151,55 +216,91 @@ const createProductBulk = async (req, res) => {
       const row = rawItems[i] || {};
       const rowNum = i + 1;
 
-      const name = (row.name || row["Product Name"] || row.productName || "").toString().trim();
-      const categoryName = (row.categoryName || row["Category Name"] || row.category || "").toString().trim();
+      const name = (row.name || row["Product Name"] || row.productName || "")
+        .toString()
+        .trim();
+      const categoryName = (
+        row.categoryName ||
+        row["Category Name"] ||
+        row.category ||
+        ""
+      )
+        .toString()
+        .trim();
       const rawPrice = row.price ?? row["Price"];
       const rawDiscount = row.discountPrice ?? row["Discount Price"];
       const rawStock = row.stock ?? row["Stock"];
       const fabric = (row.fabric || row["Fabric"] || "").toString().trim() || null;
-      const color = (row.color || row["Color"] || "").toString().trim() || null;
-      const occasion = (row.occasion || row["Occasion"] || "").toString().trim() || null;
-      const description = (row.description || row["Description"] || "").toString().trim();
+      const color = (row.color || row["Color"] || "").toString().trim();
+      const occasion =
+        (row.occasion || row["Occasion"] || "").toString().trim() || null;
+      const description = (row.description || row["Description"] || "")
+        .toString()
+        .trim();
       const rawSlug = (row.slug || row["Slug"] || "").toString().trim();
-      const image = (row.image || row["Image URL"] || row.imageUrl || "").toString().trim() || null;
+      const imageRaw = (
+        row.image ||
+        row["Image URL"] ||
+        row.imageUrl ||
+        ""
+      )
+        .toString()
+        .trim();
 
       const isTrending = toBool(row.isTrending ?? row["Is Trending"]);
       const isFeatured = toBool(row.isFeatured ?? row["Is Featured"]);
       const isOffer = toBool(row.isOffer ?? row["Is Offer"]);
 
-      // 1. Validate Product Name
       if (!name) {
         validationErrors.push(`Row ${rowNum}: Product Name is required.`);
+        continue;
       }
-
-      // 2. Validate Category
       if (!categoryName) {
         validationErrors.push(`Row ${rowNum}: Category Name is required.`);
+        continue;
       }
 
-      const matchedCategory = categoryName ? categoryMap.get(categoryName.toLowerCase()) : null;
-      if (categoryName && !matchedCategory) {
-        validationErrors.push(`Row ${rowNum}: Category '${categoryName}' does not exist in database.`);
+      const matchedCategory = categoryMap.get(categoryName.toLowerCase());
+      if (!matchedCategory) {
+        validationErrors.push(
+          `Row ${rowNum}: Category '${categoryName}' does not exist in database.`
+        );
+        continue;
       }
 
-      // 3. Validate Price
       const price = parseFloat(rawPrice);
-      if (rawPrice === undefined || rawPrice === null || rawPrice === "" || isNaN(price) || price <= 0) {
-        validationErrors.push(`Row ${rowNum}: Price must be a valid positive number.`);
+      if (
+        rawPrice === undefined ||
+        rawPrice === null ||
+        rawPrice === "" ||
+        isNaN(price) ||
+        price <= 0
+      ) {
+        validationErrors.push(
+          `Row ${rowNum}: Price must be a valid positive number.`
+        );
+        continue;
       }
 
-      // 4. Validate Stock
       const stock = parseInt(rawStock, 10);
-      if (rawStock === undefined || rawStock === null || rawStock === "" || isNaN(stock) || stock < 0) {
-        validationErrors.push(`Row ${rowNum}: Stock must be a valid non-negative integer.`);
+      if (
+        rawStock === undefined ||
+        rawStock === null ||
+        rawStock === "" ||
+        isNaN(stock) ||
+        stock < 0
+      ) {
+        validationErrors.push(
+          `Row ${rowNum}: Stock must be a valid non-negative integer.`
+        );
+        continue;
       }
 
-      // 5. Validate Description
       if (!description) {
         validationErrors.push(`Row ${rowNum}: Description is required.`);
+        continue;
       }
 
-      // Optional discount price validation
       let discountPrice = null;
       if (rawDiscount !== undefined && rawDiscount !== null && rawDiscount !== "") {
         const parsedDiscount = parseFloat(rawDiscount);
@@ -208,19 +309,59 @@ const createProductBulk = async (req, res) => {
         }
       }
 
-      // Skip row processing if errors exist
-      if (!name || !categoryName || !matchedCategory || isNaN(price) || price <= 0 || isNaN(stock) || stock < 0 || !description) {
-        continue;
+      const images = resolveProductImages(imageRaw);
+      const key = name.toLowerCase();
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          name,
+          rawSlug,
+          description,
+          price,
+          discountPrice,
+          fabric,
+          occasion,
+          isTrending,
+          isFeatured,
+          isOffer,
+          categoryId: matchedCategory.id,
+          variants: [],
+        });
       }
 
-      // Slug generation and uniqueness check
-      let baseSlug = rawSlug
-        ? rawSlug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
-        : name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const group = groups.get(key);
+      // Keep first row's shared fields; later rows only add color variants
+      group.variants.push({
+        color: color || "Default",
+        images,
+        stock,
+        rowNum,
+      });
+    }
 
-      if (!baseSlug) {
-        baseSlug = `saree-${Date.now()}-${rowNum}`;
-      }
+    if (groups.size === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid product rows to insert",
+        errors: validationErrors,
+      });
+    }
+
+    let createdCount = 0;
+    let variantCount = 0;
+
+    for (const [, group] of groups) {
+      let baseSlug = group.rawSlug
+        ? group.rawSlug
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "")
+        : group.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+
+      if (!baseSlug) baseSlug = `saree-${Date.now()}`;
 
       let finalSlug = baseSlug;
       let counter = 1;
@@ -230,51 +371,51 @@ const createProductBulk = async (req, res) => {
       }
       usedSlugs.add(finalSlug);
 
-      processedProducts.push({
-        name,
-        slug: finalSlug,
-        description,
-        price,
-        discountPrice,
-        stock,
-        fabric,
-        color,
-        occasion,
-        isTrending,
-        isFeatured,
-        isOffer,
-        image,
-        categoryId: matchedCategory.id,
-      });
-    }
+      const firstVariant = group.variants[0];
+      const totalStock = group.variants.reduce((s, v) => s + (v.stock || 0), 0);
+      const primaryImage =
+        (firstVariant.images && firstVariant.images[0]) || null;
 
-    // Return 400 if validation errors and no valid products
-    if (validationErrors.length > 0 && processedProducts.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Bulk upload validation failed",
-        errors: validationErrors,
+      const product = await prisma.product.create({
+        data: {
+          name: group.name,
+          slug: finalSlug,
+          description: group.description,
+          price: group.price,
+          discountPrice: group.discountPrice,
+          stock: totalStock,
+          image: primaryImage,
+          fabric: group.fabric,
+          color: firstVariant.color,
+          occasion: group.occasion,
+          isTrending: group.isTrending,
+          isFeatured: group.isFeatured,
+          isOffer: group.isOffer,
+          categoryId: group.categoryId,
+        },
       });
-    }
 
-    if (processedProducts.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid product rows to insert",
-        errors: validationErrors,
-      });
-    }
+      createdCount += 1;
 
-    // Bulk insert using Prisma
-    const insertResult = await prisma.product.createMany({
-      data: processedProducts,
-    });
+      if (group.variants.length > 0) {
+        await prisma.productVariant.createMany({
+          data: group.variants.map((v, idx) => ({
+            productId: product.id,
+            color: v.color,
+            images: v.images || [],
+            stock: v.stock || 0,
+            sortOrder: idx,
+          })),
+        });
+        variantCount += group.variants.length;
+      }
+    }
 
     res.status(201).json({
       success: true,
-      message: `Successfully imported ${insertResult.count} products`,
-      count: insertResult.count,
-      failedCount: rawItems.length - insertResult.count,
+      message: `Successfully imported ${createdCount} products (${variantCount} color variants)`,
+      count: createdCount,
+      variantCount,
       errors: validationErrors,
     });
   } catch (error) {
@@ -294,4 +435,3 @@ module.exports = {
   deleteProduct,
   createProductBulk,
 };
-
