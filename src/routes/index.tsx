@@ -40,16 +40,62 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+const HOMEPAGE_CACHE_KEY = "sk-homepage-data-v1";
+const HOMEPAGE_CACHE_TTL_MS = 10 * 60 * 1000;
+const HOMEPAGE_CACHE_MAX_CHARS = 1_500_000;
+
+type HomepageCache = {
+  savedAt: number;
+  settings: any;
+  categories: any[];
+  products: any[];
+};
+
+function readHomepageCache(): HomepageCache | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.sessionStorage.getItem(HOMEPAGE_CACHE_KEY);
+    if (!raw || raw.length > HOMEPAGE_CACHE_MAX_CHARS) return null;
+    const cached = JSON.parse(raw) as HomepageCache;
+    if (
+      !cached?.savedAt ||
+      Date.now() - cached.savedAt > HOMEPAGE_CACHE_TTL_MS ||
+      !cached.settings ||
+      !Array.isArray(cached.categories) ||
+      !Array.isArray(cached.products)
+    ) {
+      window.sessionStorage.removeItem(HOMEPAGE_CACHE_KEY);
+      return null;
+    }
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function writeHomepageCache(settings: any, categories: any[], products: any[]) {
+  try {
+    if (typeof window === "undefined") return;
+    const serialized = JSON.stringify({ savedAt: Date.now(), settings, categories, products });
+    if (serialized.length <= HOMEPAGE_CACHE_MAX_CHARS) {
+      window.sessionStorage.setItem(HOMEPAGE_CACHE_KEY, serialized);
+    }
+  } catch {
+    // Cache is an optimization only; live API responses remain authoritative.
+  }
+}
+
 const getIconByName = (name: string) => {
   const IconComponent = (Icons as any)[name];
   return IconComponent || HelpCircle;
 };
 
 function HomePage() {
-  const [settings, setSettings] = useState<any>(null);
-  const [dbCategories, setDbCategories] = useState<any[]>([]);
-  const [dbProducts, setDbProducts] = useState<any[] | null>(null);
-  const [isHomepageLoading, setIsHomepageLoading] = useState(true);
+  const [initialHomepageCache] = useState<HomepageCache | null>(() => readHomepageCache());
+  const [settings, setSettings] = useState<any>(initialHomepageCache?.settings ?? null);
+  const [dbCategories, setDbCategories] = useState<any[]>(initialHomepageCache?.categories ?? []);
+  const [dbProducts, setDbProducts] = useState<any[] | null>(initialHomepageCache?.products ?? null);
+  const [isHomepageLoading, setIsHomepageLoading] = useState(!initialHomepageCache);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Resolve configured hero slides while preserving legacy single-image settings.
@@ -114,39 +160,37 @@ function HomePage() {
       if (cancelled) return;
 
       const [settingsResult, categoriesResult, productsResult] = results;
+      const freshSettings =
+        settingsResult.status === "fulfilled" && settingsResult.value.success && settingsResult.value.data
+          ? settingsResult.value.data
+          : null;
+      const freshCategories =
+        categoriesResult.status === "fulfilled" && categoriesResult.value.success && Array.isArray(categoriesResult.value.data)
+          ? categoriesResult.value.data
+          : null;
+      const freshProducts =
+        productsResult.status === "fulfilled" && productsResult.value.success && Array.isArray(productsResult.value.data)
+          ? productsResult.value.data
+          : null;
 
-      if (settingsResult.status === "fulfilled" && settingsResult.value.success && settingsResult.value.data) {
-        setSettings(settingsResult.value.data);
-      } else {
-        console.error(
-          "Error fetching homepage settings:",
-          settingsResult.status === "rejected" ? settingsResult.reason : settingsResult.value
-        );
-      }
+      if (freshSettings) setSettings(freshSettings);
+      else console.error("Error fetching homepage settings:", settingsResult.status === "rejected" ? settingsResult.reason : settingsResult.value);
 
-      if (categoriesResult.status === "fulfilled" && categoriesResult.value.success && Array.isArray(categoriesResult.value.data)) {
-        setDbCategories(categoriesResult.value.data);
-      } else {
-        console.error(
-          "Error fetching categories:",
-          categoriesResult.status === "rejected" ? categoriesResult.reason : categoriesResult.value
-        );
-      }
+      if (freshCategories) setDbCategories(freshCategories);
+      else console.error("Error fetching categories:", categoriesResult.status === "rejected" ? categoriesResult.reason : categoriesResult.value);
 
-      if (productsResult.status === "fulfilled" && productsResult.value.success && Array.isArray(productsResult.value.data)) {
-        setDbProducts(productsResult.value.data);
-      } else {
-        console.error(
-          "Error fetching homepage products:",
-          productsResult.status === "rejected" ? productsResult.reason : productsResult.value
-        );
+      if (freshProducts) setDbProducts(freshProducts);
+      else console.error("Error fetching homepage products:", productsResult.status === "rejected" ? productsResult.reason : productsResult.value);
+
+      // Never replace a valid cache with partial data; saved admin selections remain intact.
+      if (freshSettings && freshCategories && freshProducts) {
+        writeHomepageCache(freshSettings, freshCategories, freshProducts);
       }
 
       setIsHomepageLoading(false);
     };
 
     loadHomepageData();
-
     return () => {
       cancelled = true;
     };
@@ -471,6 +515,8 @@ function HomePage() {
                 <img
                   src={images[currentIndex % images.length]}
                   alt={`Sri Kamatchi Silks Banner ${(currentIndex % images.length) + 1}`}
+                  fetchPriority="high"
+                  decoding="async"
                   draggable="false"
                   className="w-full h-full object-cover object-center block select-none"
                 />
@@ -590,6 +636,7 @@ function HomePage() {
                       src={s.image}
                       alt={s.name}
                       loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
                         const localMatch = subcategories.find((sub) => sub.slug === s.slug);
@@ -635,6 +682,8 @@ function HomePage() {
                   <img
                     src={p.image}
                     alt={p.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -919,7 +968,7 @@ function HomePage() {
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {galleryItemsToShow.map((item: any, index: number) => (
               <a key={index} href={item.link && item.link !== "#" ? item.link : undefined} className="block aspect-square overflow-hidden rounded-xl border border-border/60 bg-card">
-                <img src={item.imageUrl} alt={item.caption || `Sri Kamatchi Silk gallery ${index + 1}`} loading="lazy" className="h-full w-full object-cover" />
+                <img src={item.imageUrl} alt={item.caption || `Sri Kamatchi Silk gallery ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </a>
             ))}
           </div>

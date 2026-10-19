@@ -401,6 +401,14 @@ function AdminSettings() {
       if (!response.ok || !res.success) throw new Error(res.message);
       toast.success(`${sectionName} CMS configurations saved live!`);
 
+      // Invalidate this tab's homepage snapshot so returning to the storefront
+      // never briefly shows selections that predate this admin save.
+      try {
+        window.sessionStorage.removeItem("sk-homepage-data-v1");
+      } catch {
+        // Storage may be unavailable; the storefront still revalidates against the API.
+      }
+
       // Reload from DB to keep component values synchronized
       const homeRes = await fetch(`${API_BASE}/api/settings/home`);
       const homeData = await homeRes.json();
