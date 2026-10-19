@@ -1554,7 +1554,7 @@ function AdminSettings() {
                       </label>
                       {slide.showText !== false && (
                         <div className="grid gap-3 sm:grid-cols-2">
-                          {([
+                          {[
                             ["eyebrow", "Eyebrow"],
                             ["title", "Main title"],
                             ["subtitle", "Subtitle"],
@@ -1562,7 +1562,7 @@ function AdminSettings() {
                             ["primaryCtaLink", "Primary button link"],
                             ["secondaryCtaText", "Secondary button text"],
                             ["secondaryCtaLink", "Secondary button link"],
-                          ] as const).map(([field, label]) => (
+                          ].map(([field, label]) => (
                             <div key={field} className={field === "subtitle" ? "space-y-1 sm:col-span-2" : "space-y-1"}>
                               <label className="text-[10px] font-bold uppercase text-[#6e5d53]">{label}</label>
                               {field === "subtitle" ? (
