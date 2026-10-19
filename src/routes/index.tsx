@@ -348,7 +348,12 @@ function HomePage() {
     const availableAssets = [saree1, saree2, saree3, saree4, saree5, saree6];
     const usedImages = new Set<string>();
 
-    return mergedList.slice(0, 5).map((item) => {
+    const selectedIds = settings?.categoriesSection?.selectedCategoryIds;
+    const chosenList = Array.isArray(selectedIds)
+      ? mergedList.filter((item) => selectedIds.map(String).includes(String(item.id)))
+      : mergedList.slice(0, 5);
+
+    return chosenList.map((item) => {
       let finalImg = item.image;
 
       // If image is missing, duplicate, or fallback, assign a unique one from our available assets
@@ -368,7 +373,7 @@ function HomePage() {
         image: finalImg,
       };
     });
-  }, [dbCategories, subcategories]);
+  }, [dbCategories, subcategories, settings?.categoriesSection?.selectedCategoryIds]);
 
   // Instagram gallery items
   const galleryImgs = catalogProducts.slice(0, 6).map((p: any) => p.image);
