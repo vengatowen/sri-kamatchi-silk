@@ -50,7 +50,14 @@ function HomePage() {
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const images = [sriKamatchiSilksBanner, sriKamatchiSilksBanner2];
+  const configuredHeroImage = settings?.hero?.imageUrl;
+  const images = configuredHeroImage
+    ? [
+        configuredHeroImage.startsWith("http")
+          ? configuredHeroImage
+          : `${API_BASE}${configuredHeroImage.startsWith("/") ? "" : "/"}${configuredHeroImage}`,
+      ]
+    : [sriKamatchiSilksBanner, sriKamatchiSilksBanner2];
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
@@ -354,8 +361,8 @@ function HomePage() {
                 }}
               >
                 <img
-                  src={images[currentIndex]}
-                  alt={`Sri Kamatchi Silks Banner ${currentIndex + 1}`}
+                  src={images[currentIndex % images.length]}
+                  alt={`Sri Kamatchi Silks Banner ${(currentIndex % images.length) + 1}`}
                   draggable="false"
                   className="w-full h-full object-cover object-center block select-none"
                 />
