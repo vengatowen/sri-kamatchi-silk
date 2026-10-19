@@ -44,6 +44,7 @@ export function ProductCard({
             src={product.image || "https://placehold.co/600x800/fafaf9/78350f?text=Sri+Kamatchi+Silk"}
             alt={product.name}
             loading="lazy"
+            decoding="async"
             width={800}
             height={1000}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
