@@ -674,7 +674,7 @@ function HomePage() {
 
       {/* Category-wise rows */}
       {toggles.featuredCollections !== false && toggles.categoryRows !== false && displayedCategories.map((cat: any) => {
-        const catProducts = products.filter(
+        const catProducts = catalogProducts.filter(
           (p) =>
             p.category === cat.name ||
             p.subcategory === cat.name ||
