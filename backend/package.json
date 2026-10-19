@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "prestart": "prisma migrate deploy",
     "start": "node src/server.js",
     "prisma": "prisma",
     "migrate-images": "node src/utils/migrateImages.js"
@@ -13,7 +14,6 @@
     "saree",
     "ecommerce",
     "backend",
-    "express",
     "prisma",
     "postgresql"
   ],
