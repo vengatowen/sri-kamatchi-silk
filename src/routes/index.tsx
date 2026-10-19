@@ -50,16 +50,39 @@ function HomePage() {
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Support grouped and legacy hero settings. Data URLs and absolute URLs
-  // must be used as-is; only backend-relative paths should be prefixed with API_BASE.
-  const configuredHeroImage = settings?.hero?.imageUrl || settings?.heroImage || "";
+  // Resolve configured hero slides while preserving legacy single-image settings.
   const resolveHeroImage = (image: string) => {
-    if (/^(data:|blob:|https?:\/\/)/i.test(image)) return image;
+    if (!image || /^(data:|blob:|https?:\/\/)/i.test(image)) return image;
     return `${API_BASE}${image.startsWith("/") ? "" : "/"}${image}`;
   };
-  const images = configuredHeroImage
-    ? [resolveHeroImage(configuredHeroImage)]
-    : [sriKamatchiSilksBanner, sriKamatchiSilksBanner2];
+  const configuredHero = settings?.hero || {};
+  const configuredSlides = Array.isArray(configuredHero.slides)
+    ? configuredHero.slides.filter((slide: any) => slide && slide.imageUrl)
+    : [];
+  const heroSlides = configuredSlides.length > 0
+    ? configuredSlides.map((slide: any) => ({
+        ...slide,
+        imageUrl: resolveHeroImage(slide.imageUrl),
+        showText: slide.showText !== false,
+      }))
+    : (configuredHero.imageUrl || settings?.heroImage)
+      ? [{
+          imageUrl: resolveHeroImage(configuredHero.imageUrl || settings?.heroImage),
+          showText: configuredHero.showText !== false,
+          eyebrow: configuredHero.eyebrow || "",
+          title: configuredHero.title || settings?.heroTitle || "",
+          subtitle: configuredHero.subtitle || settings?.heroSubtitle || "",
+          primaryCtaText: configuredHero.primaryCtaText || "",
+          primaryCtaLink: configuredHero.primaryCtaLink || "/shop",
+          secondaryCtaText: configuredHero.secondaryCtaText || "",
+          secondaryCtaLink: configuredHero.secondaryCtaLink || "/shop",
+        }]
+      : [
+          { imageUrl: sriKamatchiSilksBanner, showText: false },
+          { imageUrl: sriKamatchiSilksBanner2, showText: false },
+        ];
+  const images = heroSlides.map((slide: any) => slide.imageUrl);
+  const activeHeroSlide = heroSlides[currentIndex % heroSlides.length] || heroSlides[0];
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
@@ -368,6 +391,47 @@ function HomePage() {
                   draggable="false"
                   className="w-full h-full object-cover object-center block select-none"
                 />
+                {activeHeroSlide?.showText && (
+                  <div className="absolute inset-0 z-[1] flex items-center">
+                    <div className="max-w-2xl px-6 py-8 sm:px-12 sm:py-12 text-white drop-shadow-md">
+                      {activeHeroSlide.eyebrow && (
+                        <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-gold mb-3">
+                          {activeHeroSlide.eyebrow}
+                        </p>
+                      )}
+                      {activeHeroSlide.title && (
+                        <h1 className="font-display text-2xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+                          {parseHeroTitle(activeHeroSlide.title)}
+                        </h1>
+                      )}
+                      {activeHeroSlide.subtitle && (
+                        <p className="mt-3 max-w-xl text-sm sm:text-base leading-relaxed text-white/90">
+                          {activeHeroSlide.subtitle}
+                        </p>
+                      )}
+                      {(activeHeroSlide.primaryCtaText || activeHeroSlide.secondaryCtaText) && (
+                        <div className="mt-6 flex flex-wrap gap-3">
+                          {activeHeroSlide.primaryCtaText && (
+                            <Link
+                              to={(activeHeroSlide.primaryCtaLink || "/shop") as any}
+                              className="inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold text-gold-foreground"
+                            >
+                              {activeHeroSlide.primaryCtaText} <ArrowRight size={15} />
+                            </Link>
+                          )}
+                          {activeHeroSlide.secondaryCtaText && (
+                            <Link
+                              to={(activeHeroSlide.secondaryCtaLink || "/shop") as any}
+                              className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-black/20 px-5 py-2.5 text-sm font-semibold text-white"
+                            >
+                              {activeHeroSlide.secondaryCtaText}
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -461,12 +525,12 @@ function HomePage() {
       )}
 
       {/* Today's Deal section */}
-      {todaysDeals.length > 0 && (
+      {toggles.trendingArrivals !== false && todaysDeals.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Exclusive Offers</span>
-              <h2 className="font-display text-2xl font-bold text-foreground mt-1">Today's Deals</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{trendingSections.trendingEyebrow || "Exclusive Offers"}</span>
+              <h2 className="font-display text-2xl font-bold text-foreground mt-1">{trendingSections.trendingTitle || "Today's Deals"}</h2>
             </div>
             <Link
               to="/shop"
@@ -506,7 +570,7 @@ function HomePage() {
       )}
 
       {/* Best Selling section */}
-      {bestSellers.length > 0 && (
+      {toggles.trendingArrivals !== false && bestSellers.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
@@ -531,7 +595,7 @@ function HomePage() {
       )}
 
       {/* Pochampalli Pure Cotton Silk Sarees section */}
-      {pochampalliProducts.length > 0 && (
+      {toggles.curatedOccasions !== false && pochampalliProducts.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
@@ -556,7 +620,7 @@ function HomePage() {
       )}
 
       {/* Category-wise rows */}
-      {displayedCategories.map((cat: any) => {
+      {toggles.featuredCollections !== false && displayedCategories.map((cat: any) => {
         const catProducts = products.filter(
           (p) =>
             p.category === cat.name ||
@@ -674,8 +738,8 @@ function HomePage() {
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Fresh Off the Loom</span>
-              <h2 className="font-display text-2xl font-bold text-foreground mt-1">New Products</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{trendingSections.newArrivalsEyebrow || "Fresh Off the Loom"}</span>
+              <h2 className="font-display text-2xl font-bold text-foreground mt-1">{trendingSections.newArrivalsTitle || "New Products"}</h2>
             </div>
             <Link
               to="/shop"
