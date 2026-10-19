@@ -50,13 +50,15 @@ function HomePage() {
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const configuredHeroImage = settings?.hero?.imageUrl;
+  // Support grouped and legacy hero settings. Data URLs and absolute URLs
+  // must be used as-is; only backend-relative paths should be prefixed with API_BASE.
+  const configuredHeroImage = settings?.hero?.imageUrl || settings?.heroImage || "";
+  const resolveHeroImage = (image: string) => {
+    if (/^(data:|blob:|https?:\/\/)/i.test(image)) return image;
+    return `${API_BASE}${image.startsWith("/") ? "" : "/"}${image}`;
+  };
   const images = configuredHeroImage
-    ? [
-        configuredHeroImage.startsWith("http")
-          ? configuredHeroImage
-          : `${API_BASE}${configuredHeroImage.startsWith("/") ? "" : "/"}${configuredHeroImage}`,
-      ]
+    ? [resolveHeroImage(configuredHeroImage)]
     : [sriKamatchiSilksBanner, sriKamatchiSilksBanner2];
 
   const nextSlide = () => {
