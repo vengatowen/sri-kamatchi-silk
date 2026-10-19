@@ -49,7 +49,16 @@ export function Navbar() {
     return logoUrl;
   };
 
-  const whatsappUrl = "https://wa.me/919443210987";
+  const contactNumber = String(header?.contactNumber || "").replace(/\D/g, "");
+  const whatsappUrl = contactNumber ? `https://wa.me/${contactNumber}` : "https://wa.me/919443210987";
+  const navLinks = Array.isArray(header?.navLinks) && header.navLinks.length > 0
+    ? header.navLinks
+    : [
+        { label: "Home", to: "/" },
+        { label: "All Categories", to: "/shop" },
+        { label: "Shop", to: "/shop" },
+        { label: "Contact", to: whatsappUrl },
+      ];
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,35 +266,29 @@ export function Navbar() {
 
           {/* Navigation Links */}
           <nav className="flex items-center gap-8">
-            <Link
-              to="/"
-              className="text-xs font-semibold uppercase tracking-wider text-foreground/80 transition-colors hover:text-primary"
-              activeProps={{ className: "text-primary font-bold" }}
-              activeOptions={{ exact: true }}
-            >
-              Home
-            </Link>
-            <Link
-              to="/shop"
-              className="text-xs font-semibold uppercase tracking-wider text-foreground/80 transition-colors hover:text-primary"
-              activeProps={{ className: "text-primary font-bold" }}
-            >
-              All Categories
-            </Link>
-            <Link
-              to="/shop"
-              className="text-xs font-semibold uppercase tracking-wider text-foreground/80 transition-colors hover:text-primary"
-            >
-              Shop
-            </Link>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs font-semibold uppercase tracking-wider text-foreground/80 transition-colors hover:text-primary"
-            >
-              Contact
-            </a>
+            {navLinks.map((item: any, index: number) => (
+              /^https?:\/\//i.test(item.to || "") ? (
+                <a
+                  key={item.label || index}
+                  href={item.to}
+                  target={item.to.startsWith("http") ? "_blank" : undefined}
+                  rel="noreferrer"
+                  className="text-xs font-semibold uppercase tracking-wider text-foreground/80 transition-colors hover:text-primary"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.label || index}
+                  to={(item.to || "/") as any}
+                  className="text-xs font-semibold uppercase tracking-wider text-foreground/80 transition-colors hover:text-primary"
+                  activeProps={{ className: "text-primary font-bold" }}
+                  activeOptions={{ exact: item.to === "/" }}
+                >
+                  {item.label}
+                </Link>
+              )
+            ))}
           </nav>
         </div>
       </div>
@@ -332,32 +335,31 @@ export function Navbar() {
                       Navigation
                     </h4>
                     <nav className="flex flex-col gap-0.5">
-                      <Link
-                        to="/"
-                        onClick={() => setMobileOpen(false)}
-                        className="rounded-lg px-3 py-2 text-xs font-semibold text-foreground/80 hover:bg-secondary"
-                        activeProps={{ className: "bg-secondary text-primary font-bold" }}
-                        activeOptions={{ exact: true }}
-                      >
-                        Home
-                      </Link>
-                      <Link
-                        to="/shop"
-                        onClick={() => setMobileOpen(false)}
-                        className="rounded-lg px-3 py-2 text-xs font-semibold text-foreground/80 hover:bg-secondary"
-                        activeProps={{ className: "bg-secondary text-primary font-bold" }}
-                      >
-                        Shop All
-                      </Link>
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={() => setMobileOpen(false)}
-                        className="rounded-lg px-3 py-2 text-xs font-semibold text-foreground/80 hover:bg-secondary"
-                      >
-                        Contact WhatsApp
-                      </a>
+                      {navLinks.map((item: any, index: number) =>
+                        /^https?:\/\//i.test(item.to || "") ? (
+                          <a
+                            key={item.label || index}
+                            href={item.to}
+                            target={item.to.startsWith("http") ? "_blank" : undefined}
+                            rel="noreferrer"
+                            onClick={() => setMobileOpen(false)}
+                            className="rounded-lg px-3 py-2 text-xs font-semibold text-foreground/80 hover:bg-secondary"
+                          >
+                            {item.label}
+                          </a>
+                        ) : (
+                          <Link
+                            key={item.label || index}
+                            to={(item.to || "/") as any}
+                            onClick={() => setMobileOpen(false)}
+                            className="rounded-lg px-3 py-2 text-xs font-semibold text-foreground/80 hover:bg-secondary"
+                            activeProps={{ className: "bg-secondary text-primary font-bold" }}
+                            activeOptions={{ exact: item.to === "/" }}
+                          >
+                            {item.label}
+                          </Link>
+                        )
+                      )}
                     </nav>
                   </div>
 
