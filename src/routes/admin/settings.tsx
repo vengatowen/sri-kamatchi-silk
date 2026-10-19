@@ -227,6 +227,8 @@ function ImageUploadField({
 function AdminSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("general");
+  const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
+  const [catalogCategories, setCatalogCategories] = useState<any[]>([]);
 
   // Legacy & Specific states retained
   const [rzpActive, setRzpActive] = useState(true);
@@ -312,6 +314,12 @@ function AdminSettings() {
 
   useEffect(() => {
     fetchSettings();
+    fetch(`${API_BASE}/api/products`).then((response) => response.json()).then((res) => {
+      if (res.success && Array.isArray(res.data)) setCatalogProducts(res.data);
+    }).catch((error) => console.error("Unable to load products for homepage selection", error));
+    fetch(`${API_BASE}/api/categories`).then((response) => response.json()).then((res) => {
+      if (res.success && Array.isArray(res.data)) setCatalogCategories(res.data);
+    }).catch((error) => console.error("Unable to load categories for homepage selection", error));
   }, []);
 
   // Save Payment settings
