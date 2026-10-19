@@ -200,6 +200,7 @@ model HomeSettings {
   gallery             Json?
   newsletter          Json?
   footer              Json?
+  sectionContent      Json?
 
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
