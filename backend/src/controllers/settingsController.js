@@ -393,6 +393,7 @@ const getHomeSettings = async (req, res) => {
       gallery: settings.gallery || fallbackGallery,
       newsletter: settings.newsletter || fallbackNewsletter,
       footer: settings.footer || fallbackFooter,
+      sectionContent: settings.sectionContent || {},
     };
 
     res.status(200).json({
@@ -428,6 +429,7 @@ const updateHomeSettings = async (req, res) => {
       gallery,
       newsletter,
       footer,
+      sectionContent,
     } = req.body;
 
     let settings = await prisma.homeSettings.findFirst();
@@ -450,6 +452,7 @@ const updateHomeSettings = async (req, res) => {
     if (gallery !== undefined) data.gallery = gallery;
     if (newsletter !== undefined) data.newsletter = newsletter;
     if (footer !== undefined) data.footer = footer;
+    if (sectionContent !== undefined) data.sectionContent = sectionContent;
 
     if (!settings) {
       settings = await prisma.homeSettings.create({ data });
