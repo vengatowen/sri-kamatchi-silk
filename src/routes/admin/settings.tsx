@@ -1895,7 +1895,8 @@ function AdminSettings() {
 
               <div className="grid gap-4 sm:grid-cols-2 text-sm text-[#2c2623]">
                 {Object.entries({
-                  heroCarousel: "Why Choose Us Section",
+                  heroCarousel: "Homepage Hero Slider",
+                  promiseSection: "Why Choose Us Section",
                   trendingArrivals: "Trending Arrivals",
                   curatedOccasions: "Curated Occasions Finder",
                   customerTestimonials: "Customer Testimonials Slider",
