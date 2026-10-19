@@ -1212,13 +1212,29 @@ function AdminSettings() {
                 </div>
                 {(Array.isArray(homeSettings.hero?.slides) ? homeSettings.hero.slides : []).map((slide: any, index: number) => (
                   <div key={index} className="space-y-3 rounded-xl border border-[#e8dfd8] bg-white p-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-bold text-[#3a1d13]">Slide {index + 1}</span>
-                      <button type="button" onClick={() => {
-                        const slides = [...(homeSettings.hero?.slides || [])];
-                        slides.splice(index, 1);
-                        setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
-                      }} className="text-xs font-semibold text-red-700">Remove slide</button>
+                      <div className="flex items-center gap-3">
+                        <button type="button" disabled={index === 0} onClick={() => {
+                          const slides = [...(homeSettings.hero?.slides || [])];
+                          const previous = slides[index - 1];
+                          slides[index - 1] = slides[index];
+                          slides[index] = previous;
+                          setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                        }} className="text-xs font-semibold disabled:opacity-40">Move up</button>
+                        <button type="button" disabled={index === (homeSettings.hero?.slides || []).length - 1} onClick={() => {
+                          const slides = [...(homeSettings.hero?.slides || [])];
+                          const next = slides[index + 1];
+                          slides[index + 1] = slides[index];
+                          slides[index] = next;
+                          setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                        }} className="text-xs font-semibold disabled:opacity-40">Move down</button>
+                        <button type="button" onClick={() => {
+                          const slides = [...(homeSettings.hero?.slides || [])];
+                          slides.splice(index, 1);
+                          setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                        }} className="text-xs font-semibold text-red-700">Remove slide</button>
+                      </div>
                     </div>
                     <ImageUploadField label={"Slide " + (index + 1) + " image"} value={slide.imageUrl || ""} onChange={(value) => {
                       const slides = [...(homeSettings.hero?.slides || [])];
@@ -1970,7 +1986,17 @@ function AdminSettings() {
                     <input type="text" value={homeSettings.sectionContent?.[field] ?? fallback} onChange={(e) => setHomeSettings({ ...homeSettings, sectionContent: { ...(homeSettings.sectionContent || {}), [field]: e.target.value } })} className="w-full rounded-xl border border-[#e8dfd8] bg-white px-3.5 py-3 outline-none focus:border-[#d4af37]" />
                   </div>
                 ))}
-                <p className="text-[10px] text-muted-foreground">Product selection rules and existing product data are preserved. These options control section labels only.</p>
+                {[
+                  ["bestSellersMaxProducts", "Best sellers product count", 4],
+                  ["pochampalliMaxProducts", "Pochampalli product count", 4],
+                  ["categoryRowsMaxProducts", "Products per category row (0 = all)", 0]
+                ].map(([field, label, fallback]) => (
+                  <div key={field} className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#6e5d53]">{label}</label>
+                    <input type="number" min="0" max="50" value={homeSettings.sectionContent?.[field] ?? fallback} onChange={(e) => setHomeSettings({ ...homeSettings, sectionContent: { ...(homeSettings.sectionContent || {}), [field]: Number(e.target.value) } })} className="w-full rounded-xl border border-[#e8dfd8] bg-white px-3.5 py-3 outline-none focus:border-[#d4af37]" />
+                  </div>
+                ))}
+                <p className="text-[10px] text-muted-foreground">Product selection rules and existing product data are preserved. These settings control section labels and display counts only.</p>
               </div>
 
               <div className="space-y-4">
