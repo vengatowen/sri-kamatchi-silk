@@ -758,6 +758,101 @@ function HomePage() {
         </section>
       )}
 
+      {/* Boutique options: curated occasions */}
+      {toggles.curatedOccasions !== false && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <SectionHeading eyebrow={occasionFinder.eyebrow} title={occasionFinder.title} subtitle={occasionFinder.subtitle} />
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {(occasionFinder.items || []).map((item: any, index: number) => {
+              const OccasionIcon = getIconByName(item.icon || "Sparkles");
+              return (
+                <Link key={item.name || index} to="/shop" className="flex flex-col items-center gap-3 rounded-2xl border border-border/60 bg-card p-5 text-center transition-colors hover:border-gold">
+                  <OccasionIcon size={24} className="text-primary" />
+                  <span className="text-xs font-semibold">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: why choose us */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+        <SectionHeading eyebrow={promiseSection.eyebrow} title={promiseSection.title} />
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {(promiseSection.cards || []).map((card: any, index: number) => {
+            const PromiseIcon = getIconByName(card.icon || "Award");
+            return (
+              <div key={card.title || index} className="rounded-2xl border border-border/60 bg-card p-5">
+                <PromiseIcon size={24} className="text-primary" />
+                <h3 className="mt-3 font-display text-base font-semibold">{card.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{card.text}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Boutique options: celebrity collection */}
+      {toggles.celebritySection !== false && celebrity.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <SectionHeading eyebrow={trendingSections.celebrityEyebrow || "As Seen on Stars"} title={trendingSections.celebrityTitle || "Celebrity Inspired"} />
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 justify-items-center">
+            {celebrity.slice(0, 4).map((p, index) => (
+              <div key={p.id} className="w-full">
+                <ProductCard product={p} index={index} variant="square" />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: testimonials */}
+      {toggles.customerTestimonials !== false && dbTestimonials.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <SectionHeading eyebrow="Customer Stories" title="Loved by Our Customers" />
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {dbTestimonials.map((item: any, index: number) => (
+              <article key={item.id || index} className="rounded-2xl border border-border/60 bg-card p-5">
+                <div className="flex items-center gap-1 text-gold" aria-label={`${item.rating || 5} out of 5 stars`}>
+                  {Array.from({ length: Math.max(1, Math.min(5, Number(item.rating) || 5)) }).map((_, starIndex) => <span key={starIndex}>★</span>)}
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">“{item.text || item.message || ""}”</p>
+                <p className="mt-4 text-sm font-semibold">{item.name || "Customer"}</p>
+                {item.location && <p className="text-xs text-muted-foreground">{item.location}</p>}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: Instagram gallery */}
+      {toggles.instagramGallery !== false && galleryItemsToShow.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <SectionHeading eyebrow={gallery.eyebrow} title={gallery.title} subtitle={gallery.subtitle} />
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {galleryItemsToShow.map((item: any, index: number) => (
+              <a key={index} href={item.link && item.link !== "#" ? item.link : undefined} className="block aspect-square overflow-hidden rounded-xl border border-border/60 bg-card">
+                <img src={item.imageUrl} alt={item.caption || `Sri Kamatchi Silk gallery ${index + 1}`} loading="lazy" className="h-full w-full object-cover" />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: newsletter */}
+      {toggles.newsletter !== false && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <div className="rounded-3xl bg-gradient-maroon px-6 py-10 text-center text-primary-foreground sm:px-12">
+            <h2 className="font-display text-2xl font-bold sm:text-3xl">{newsletter.title}</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-primary-foreground/80">{newsletter.subtitle}</p>
+            <Link to="/contact" className="mt-6 inline-flex rounded-full bg-gold px-6 py-3 text-sm font-semibold text-gold-foreground">
+              {newsletter.buttonText || "Contact Us"}
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Policy/Service Strip */}
       <section className="bg-card border-y border-border/40 py-8 mb-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
