@@ -2130,7 +2130,7 @@ function AdminSettings() {
                   type="button"
                   onClick={() =>
                     handleSaveSettingsPart(
-                      { trendingSections: homeSettings.trendingSections },
+                      { trendingSections: homeSettings.trendingSections, sectionContent: homeSettings.sectionContent },
                       "Trending Categories",
                     )
                   }
