@@ -49,6 +49,7 @@ function HomePage() {
   const [settings, setSettings] = useState<any>(null);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [dbProducts, setDbProducts] = useState<any[] | null>(null);
+  const [isHomepageLoading, setIsHomepageLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Resolve configured hero slides while preserving legacy single-image settings.
@@ -101,30 +102,54 @@ function HomePage() {
   }, [currentIndex]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/settings/home`)
-      .then((res) => res.json())
-      .then((res) => {
-        if (res.success && res.data) {
-          setSettings(res.data);
-        }
-      })
-      .catch((err) => console.error("Error fetching homepage settings:", err));
+    let cancelled = false;
 
-    fetch(`${API_BASE}/api/categories`)
-      .then((res) => res.json())
-      .then((res) => {
-        if (res.success && res.data) {
-          setDbCategories(res.data);
-        }
-      })
-      .catch((err) => console.error("Error fetching categories:", err));
+    const loadHomepageData = async () => {
+      const results = await Promise.allSettled([
+        fetch(`${API_BASE}/api/settings/home`).then((res) => res.json()),
+        fetch(`${API_BASE}/api/categories`).then((res) => res.json()),
+        fetch(`${API_BASE}/api/products`).then((res) => res.json()),
+      ]);
 
-    fetch(`${API_BASE}/api/products`)
-      .then((res) => res.json())
-      .then((res) => {
-        if (res.success && Array.isArray(res.data)) setDbProducts(res.data);
-      })
-      .catch((err) => console.error("Error fetching homepage products:", err));
+      if (cancelled) return;
+
+      const [settingsResult, categoriesResult, productsResult] = results;
+
+      if (settingsResult.status === "fulfilled" && settingsResult.value.success && settingsResult.value.data) {
+        setSettings(settingsResult.value.data);
+      } else {
+        console.error(
+          "Error fetching homepage settings:",
+          settingsResult.status === "rejected" ? settingsResult.reason : settingsResult.value
+        );
+      }
+
+      if (categoriesResult.status === "fulfilled" && categoriesResult.value.success && Array.isArray(categoriesResult.value.data)) {
+        setDbCategories(categoriesResult.value.data);
+      } else {
+        console.error(
+          "Error fetching categories:",
+          categoriesResult.status === "rejected" ? categoriesResult.reason : categoriesResult.value
+        );
+      }
+
+      if (productsResult.status === "fulfilled" && productsResult.value.success && Array.isArray(productsResult.value.data)) {
+        setDbProducts(productsResult.value.data);
+      } else {
+        console.error(
+          "Error fetching homepage products:",
+          productsResult.status === "rejected" ? productsResult.reason : productsResult.value
+        );
+      }
+
+      setIsHomepageLoading(false);
+    };
+
+    loadHomepageData();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Extraction of settings with fallback values
@@ -403,6 +428,12 @@ function HomePage() {
     }
     return titleText;
   };
+
+  // Do not render hardcoded fallback categories/products while admin settings are still loading.
+  // This prevents the default-coded homepage from flashing before saved selections arrive.
+  if (isHomepageLoading) {
+    return <StoreLayout><main aria-busy="true" className="min-h-[50vh]" /></StoreLayout>;
+  }
 
   return (
     <StoreLayout>
