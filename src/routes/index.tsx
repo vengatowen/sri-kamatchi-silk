@@ -683,9 +683,9 @@ function HomePage() {
                 <img
                   src={
                     weddingBannerData.imageUrl
-                      ? weddingBannerData.imageUrl.startsWith("http")
+                      ? /^(data:|blob:|https?:\/\/)/i.test(weddingBannerData.imageUrl)
                         ? weddingBannerData.imageUrl
-                        : `${API_BASE}${weddingBannerData.imageUrl}`
+                        : `${API_BASE}${weddingBannerData.imageUrl.startsWith("/") ? "" : "/"}${weddingBannerData.imageUrl}`
                       : saree2
                   }
                   alt={weddingBannerData.title}
@@ -717,9 +717,9 @@ function HomePage() {
                 <img
                   src={
                     festivalBannerData.imageUrl
-                      ? festivalBannerData.imageUrl.startsWith("http")
+                      ? /^(data:|blob:|https?:\/\/)/i.test(festivalBannerData.imageUrl)
                         ? festivalBannerData.imageUrl
-                        : `${API_BASE}${festivalBannerData.imageUrl}`
+                        : `${API_BASE}${festivalBannerData.imageUrl.startsWith("/") ? "" : "/"}${festivalBannerData.imageUrl}`
                       : saree5
                   }
                   alt={festivalBannerData.title}
@@ -779,6 +779,7 @@ function HomePage() {
       )}
 
       {/* Boutique options: why choose us */}
+      {toggles.promiseSection !== false && (
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <SectionHeading eyebrow={promiseSection.eyebrow} title={promiseSection.title} />
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -794,6 +795,7 @@ function HomePage() {
           })}
         </div>
       </section>
+      )}
 
       {/* Boutique options: celebrity collection */}
       {toggles.celebritySection !== false && celebrity.length > 0 && (
