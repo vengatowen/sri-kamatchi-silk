@@ -1923,7 +1923,7 @@ function AdminSettings() {
                     const imageOverrides = homeSettings.categoriesSection?.imageOverrides || {};
                     const override = imageOverrides[String(category.id)] || "";
                     const categoryImage = category.image
-                      ? (/^(data:|blob:|https?:\\/\\/)/i.test(category.image)
+                      ? (/^(data:|blob:|https?:\/\/)/i.test(category.image)
                           ? category.image
                           : `${API_BASE}${category.image.startsWith("/") ? "" : "/"}${category.image}`)
                       : "";
