@@ -428,7 +428,7 @@ function HomePage() {
       const overrideValue = imageOverrides[String(item.id)];
       const hasCustomOverride = typeof overrideValue === "string" && overrideValue.trim().length > 0;
       const resolvedOverride = hasCustomOverride
-        ? (/^(data:|blob:|https?:\\/\\/)/i.test(overrideValue)
+        ? (/^(data:|blob:|https?:\/\/)/i.test(overrideValue)
             ? overrideValue
             : `${API_BASE}${overrideValue.startsWith("/") ? "" : "/"}${overrideValue}`)
         : "";
