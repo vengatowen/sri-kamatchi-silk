@@ -50,13 +50,15 @@ function HomePage() {
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const configuredHeroImage = settings?.hero?.imageUrl;
+  // Support both the grouped hero setting and the legacy heroImage field.
+  // Uploaded files may be stored as data URLs; those must not be prefixed with API_BASE.
+  const configuredHeroImage = settings?.hero?.imageUrl || settings?.heroImage || "";
+  const resolveHeroImage = (image: string) => {
+    if (/^(data:|blob:|https?:\/\/)/i.test(image)) return image;
+    return `${API_BASE}${image.startsWith("/") ? "" : "/"}${image}`;
+  };
   const images = configuredHeroImage
-    ? [
-        configuredHeroImage.startsWith("http")
-          ? configuredHeroImage
-          : `${API_BASE}${configuredHeroImage.startsWith("/") ? "" : "/"}${configuredHeroImage}`,
-      ]
+    ? [resolveHeroImage(configuredHeroImage)]
     : [sriKamatchiSilksBanner, sriKamatchiSilksBanner2];
 
   const nextSlide = () => {
