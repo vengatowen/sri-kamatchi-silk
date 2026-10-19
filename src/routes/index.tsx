@@ -170,6 +170,8 @@ function HomePage() {
     maxProducts: 4,
   };
 
+  const sectionContent = settings?.sectionContent || {};
+
   const occasionFinder = settings?.occasionFinder || {
     eyebrow: "Curated for You",
     title: "Find Your Saree by Occasion",
@@ -527,12 +529,12 @@ function HomePage() {
       )}
 
       {/* Today's Deal section */}
-      {toggles.trendingArrivals !== false && todaysDeals.length > 0 && (
+      {toggles.trendingArrivals !== false && toggles.todaysDeals !== false && todaysDeals.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{trendingSections.trendingEyebrow || "Exclusive Offers"}</span>
-              <h2 className="font-display text-2xl font-bold text-foreground mt-1">{trendingSections.trendingTitle || "Today's Deals"}</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{sectionContent.todaysDealsEyebrow || trendingSections.trendingEyebrow || "Exclusive Offers"}</span>
+              <h2 className="font-display text-2xl font-bold text-foreground mt-1">{sectionContent.todaysDealsTitle || trendingSections.trendingTitle || "Today's Deals"}</h2>
             </div>
             <Link
               to="/shop"
@@ -572,12 +574,12 @@ function HomePage() {
       )}
 
       {/* Best Selling section */}
-      {toggles.trendingArrivals !== false && bestSellers.length > 0 && (
+      {toggles.trendingArrivals !== false && toggles.bestSellers !== false && bestSellers.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Most Popular</span>
-              <h2 className="font-display text-2xl font-bold text-foreground mt-1">Best Selling Sarees</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{sectionContent.bestSellersEyebrow || "Most Popular"}</span>
+              <h2 className="font-display text-2xl font-bold text-foreground mt-1">{sectionContent.bestSellersTitle || "Best Selling Sarees"}</h2>
             </div>
             <Link
               to="/shop"
@@ -587,7 +589,7 @@ function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 justify-items-center">
-            {bestSellers.slice(0, 4).map((p, i) => (
+            {bestSellers.slice(0, Math.max(1, Number(sectionContent.bestSellersMaxProducts) || 4)).map((p, i) => (
               <div key={p.id} className="w-full max-w-[240px] sm:max-w-[260px] lg:max-w-[220px]">
                 <ProductCard product={p} index={i} variant="square-compact" />
               </div>
@@ -597,12 +599,12 @@ function HomePage() {
       )}
 
       {/* Pochampalli Pure Cotton Silk Sarees section */}
-      {toggles.curatedOccasions !== false && pochampalliProducts.length > 0 && (
+      {toggles.curatedOccasions !== false && toggles.pochampalliSection !== false && pochampalliProducts.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Traditional Weaves</span>
-              <h2 className="font-display text-2xl font-bold text-foreground mt-1">Pochampalli Pure Cotton Silk Sarees</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{sectionContent.pochampalliEyebrow || "Traditional Weaves"}</span>
+              <h2 className="font-display text-2xl font-bold text-foreground mt-1">{sectionContent.pochampalliTitle || "Pochampalli Pure Cotton Silk Sarees"}</h2>
             </div>
             <Link
               to="/shop"
@@ -612,7 +614,7 @@ function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 justify-items-center">
-            {pochampalliProducts.slice(0, 4).map((p, i) => (
+            {pochampalliProducts.slice(0, Math.max(1, Number(sectionContent.pochampalliMaxProducts) || 4)).map((p, i) => (
               <div key={p.id} className="w-full">
                 <ProductCard product={p} index={i} variant="square" />
               </div>
@@ -622,7 +624,7 @@ function HomePage() {
       )}
 
       {/* Category-wise rows */}
-      {toggles.featuredCollections !== false && displayedCategories.map((cat: any) => {
+      {toggles.featuredCollections !== false && toggles.categoryRows !== false && displayedCategories.map((cat: any) => {
         const catProducts = products.filter(
           (p) =>
             p.category === cat.name ||
@@ -635,8 +637,8 @@ function HomePage() {
           <section key={cat.id} className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
             <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Collections</span>
-                <h2 className="font-display text-2xl font-bold text-foreground mt-1">{cat.name}</h2>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{sectionContent.categoryRowsEyebrow || "Collections"}</span>
+                <h2 className="font-display text-2xl font-bold text-foreground mt-1">{sectionContent.categoryRowsTitlePrefix ? sectionContent.categoryRowsTitlePrefix + " " + cat.name : cat.name}</h2>
               </div>
               <Link
                 to="/category/$slug"
@@ -647,7 +649,7 @@ function HomePage() {
               </Link>
             </div>
             <div className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar pb-4 scroll-smooth">
-              {catProducts.map((p) => (
+              {(Number(sectionContent.categoryRowsMaxProducts) > 0 ? catProducts.slice(0, Number(sectionContent.categoryRowsMaxProducts)) : catProducts).map((p) => (
                 <div key={p.id} className="min-w-[180px] sm:min-w-[220px] flex-shrink-0">
                   <ProductCard product={p} variant="square" />
                 </div>
