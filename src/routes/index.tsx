@@ -636,6 +636,7 @@ function HomePage() {
                       src={s.image}
                       alt={s.name}
                       loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
                         const localMatch = subcategories.find((sub) => sub.slug === s.slug);
@@ -967,7 +968,7 @@ function HomePage() {
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {galleryItemsToShow.map((item: any, index: number) => (
               <a key={index} href={item.link && item.link !== "#" ? item.link : undefined} className="block aspect-square overflow-hidden rounded-xl border border-border/60 bg-card">
-                <img src={item.imageUrl} alt={item.caption || `Sri Kamatchi Silk gallery ${index + 1}`} loading="lazy" className="h-full w-full object-cover" />
+                <img src={item.imageUrl} alt={item.caption || `Sri Kamatchi Silk gallery ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </a>
             ))}
           </div>
