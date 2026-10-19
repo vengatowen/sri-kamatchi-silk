@@ -356,6 +356,7 @@ function HomePage() {
   return (
     <StoreLayout>
       {/* Hero / Banner Slider */}
+      {toggles.heroCarousel !== false && (
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -477,6 +478,7 @@ function HomePage() {
           </div>
         </motion.div>
       </section>
+      )}
 
       {/* Featured Categories (Circular grid) */}
       {toggles.featuredCollections !== false && (
