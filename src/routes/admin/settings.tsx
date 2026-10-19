@@ -1198,6 +1198,82 @@ function AdminSettings() {
                 </p>
               </div>
 
+              <div className="space-y-4 rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-[#3a1d13]">Hero Slider Slides</h4>
+                    <p className="text-[10px] text-muted-foreground">Manage images and optional text per slide. Existing hero image remains as a fallback.</p>
+                  </div>
+                  <button type="button" onClick={() => {
+                    const slides = [...(homeSettings.hero?.slides || [])];
+                    slides.push({ imageUrl: "", showText: true, eyebrow: "", title: "", subtitle: "", primaryCtaText: "", primaryCtaLink: "/shop", secondaryCtaText: "", secondaryCtaLink: "/shop" });
+                    setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                  }} className="rounded-lg bg-[#3a1d13] px-3 py-2 text-xs font-bold text-white">Add slide</button>
+                </div>
+                {(Array.isArray(homeSettings.hero?.slides) ? homeSettings.hero.slides : []).map((slide: any, index: number) => (
+                  <div key={index} className="space-y-3 rounded-xl border border-[#e8dfd8] bg-white p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#3a1d13]">Slide {index + 1}</span>
+                      <button type="button" onClick={() => {
+                        const slides = [...(homeSettings.hero?.slides || [])];
+                        slides.splice(index, 1);
+                        setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                      }} className="text-xs font-semibold text-red-700">Remove slide</button>
+                    </div>
+                    <ImageUploadField label={"Slide " + (index + 1) + " image"} value={slide.imageUrl || ""} onChange={(value) => {
+                      const slides = [...(homeSettings.hero?.slides || [])];
+                      slides[index] = { ...slides[index], imageUrl: value };
+                      setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                    }} onRemove={() => {
+                      const slides = [...(homeSettings.hero?.slides || [])];
+                      slides[index] = { ...slides[index], imageUrl: "" };
+                      setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                    }} />
+                    <label className="flex items-center justify-between gap-3 rounded-lg border border-[#f3ede8] p-3 text-xs font-semibold">
+                      <span>Show text overlay on this slide</span>
+                      <input type="checkbox" checked={slide.showText !== false} onChange={(e) => {
+                        const slides = [...(homeSettings.hero?.slides || [])];
+                        slides[index] = { ...slides[index], showText: e.target.checked };
+                        setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                      }} />
+                    </label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {[
+                        ["eyebrow", "Eyebrow"],
+                        ["title", "Main title"],
+                        ["subtitle", "Subtitle"],
+                        ["primaryCtaText", "Primary button text"],
+                        ["primaryCtaLink", "Primary button link"],
+                        ["secondaryCtaText", "Secondary button text"],
+                        ["secondaryCtaLink", "Secondary button link"]
+                      ].map(([field, label]) => (
+                        <div key={field} className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-[#6e5d53]">{label}</label>
+                          {field === "subtitle" ? (
+                            <textarea rows={2} value={slide[field] || ""} onChange={(e) => {
+                              const slides = [...(homeSettings.hero?.slides || [])];
+                              slides[index] = { ...slides[index], [field]: e.target.value };
+                              setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                            }} className="w-full rounded-lg border border-[#e8dfd8] bg-[#fbfaf7] px-3 py-2 text-xs outline-none focus:border-[#d4af37]" />
+                          ) : (
+                            <input type="text" value={slide[field] || ""} onChange={(e) => {
+                              const slides = [...(homeSettings.hero?.slides || [])];
+                              slides[index] = { ...slides[index], [field]: e.target.value };
+                              setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, slides } });
+                            }} className="w-full rounded-lg border border-[#e8dfd8] bg-[#fbfaf7] px-3 py-2 text-xs outline-none focus:border-[#d4af37]" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <label className="flex items-center justify-between gap-3 rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] p-3 text-xs font-semibold">
+                <span>Show text overlay on the legacy single-image hero</span>
+                <input type="checkbox" checked={homeSettings.hero?.showText !== false} onChange={(e) => setHomeSettings({ ...homeSettings, hero: { ...homeSettings.hero, showText: e.target.checked } })} />
+              </label>
+
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
@@ -1710,6 +1786,10 @@ function AdminSettings() {
               <div className="grid gap-4 sm:grid-cols-2 text-sm text-[#2c2623]">
                 {Object.entries({
                   heroCarousel: "Homepage Hero Slider",
+                  todaysDeals: "Today's Deals Section",
+                  bestSellers: "Best Selling Sarees Section",
+                  pochampalliSection: "Pochampalli Sarees Section",
+                  categoryRows: "Category-wise Product Rows",
                   promiseSection: "Why Choose Us Section",
                   trendingArrivals: "Trending Arrivals",
                   curatedOccasions: "Curated Occasions Finder",
@@ -1871,6 +1951,26 @@ function AdminSettings() {
                 <p className="text-[10px] text-muted-foreground">
                   Adjust visual subtitles and product quantities for hot grids.
                 </p>
+              </div>
+
+              <div className="space-y-4 rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] p-4">
+                <h4 className="text-sm font-bold text-[#3a1d13]">Additional Homepage Product Sections</h4>
+                {[
+                  ["todaysDealsEyebrow", "Today's Deals eyebrow", "Exclusive Offers"],
+                  ["todaysDealsTitle", "Today's Deals title", "Today's Deals"],
+                  ["bestSellersEyebrow", "Best sellers eyebrow", "Most Popular"],
+                  ["bestSellersTitle", "Best sellers title", "Best Selling Sarees"],
+                  ["pochampalliEyebrow", "Pochampalli eyebrow", "Traditional Weaves"],
+                  ["pochampalliTitle", "Pochampalli title", "Pochampalli Pure Cotton Silk Sarees"],
+                  ["categoryRowsEyebrow", "Category row eyebrow", "Collections"],
+                  ["categoryRowsTitlePrefix", "Category row title prefix", ""]
+                ].map(([field, label, fallback]) => (
+                  <div key={field} className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#6e5d53]">{label}</label>
+                    <input type="text" value={homeSettings.sectionContent?.[field] ?? fallback} onChange={(e) => setHomeSettings({ ...homeSettings, sectionContent: { ...(homeSettings.sectionContent || {}), [field]: e.target.value } })} className="w-full rounded-xl border border-[#e8dfd8] bg-white px-3.5 py-3 outline-none focus:border-[#d4af37]" />
+                  </div>
+                ))}
+                <p className="text-[10px] text-muted-foreground">Product selection rules and existing product data are preserved. These options control section labels only.</p>
               </div>
 
               <div className="space-y-4">
