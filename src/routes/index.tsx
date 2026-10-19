@@ -7,7 +7,7 @@ import { StoreLayout } from "@/components/store/StoreLayout";
 import { SectionHeading } from "@/components/store/SectionHeading";
 import { ProductCard } from "@/components/store/ProductCard";
 import { StarRating } from "@/components/store/StarRating";
-import { products } from "@/data/products";
+import { products as localProducts } from "@/data/products";
 import { subcategories } from "@/data/categories";
 import { testimonials as staticTestimonials } from "@/data/store";
 import { API_BASE } from "@/lib/api";
@@ -48,6 +48,7 @@ const getIconByName = (name: string) => {
 function HomePage() {
   const [settings, setSettings] = useState<any>(null);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
+  const [dbProducts, setDbProducts] = useState<any[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Resolve configured hero slides while preserving legacy single-image settings.
@@ -117,6 +118,13 @@ function HomePage() {
         }
       })
       .catch((err) => console.error("Error fetching categories:", err));
+
+    fetch(`${API_BASE}/api/products`)
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) setDbProducts(res.data);
+      })
+      .catch((err) => console.error("Error fetching homepage products:", err));
   }, []);
 
   // Extraction of settings with fallback values
@@ -246,20 +254,56 @@ function HomePage() {
     imageUrl: "",
   };
 
-  // Products filtering based on catalog
-  const limit = trendingSections.maxProducts || 4;
-  const trending = products.filter((p) => p.trending).slice(0, limit);
-  const newArrivals = products.filter((p) => p.newArrival).slice(0, limit);
-  const celebrity = products.filter((p) => p.subcategory === "Celebrity Silks").slice(0, limit);
-  const todaysDeals = products.filter((p) => p.offer || (p.discountPrice && p.discountPrice < p.price));
-  const bestSellers = products.filter((p) => p.bestSeller || p.trending);
-  const pochampalliProducts = products.filter(
-    (p) =>
-      p.subcategory === "Pure Cotton Silks" ||
-      p.subcategory === "Cotton Silks" ||
-      p.fabric === "Cotton Silk" ||
-      p.fabric === "Pure Cotton"
-  );
+  // Prefer live backend products. Local sample products are used only if the API cannot be reached.
+  const catalogProducts = useMemo(() => {
+    if (dbProducts === null) return localProducts;
+    return dbProducts.map((p: any) => {
+      const image = p.image || p.images?.[0] || "";
+      const resolvedImage = image && /^(https?:|data:|blob:)/i.test(image) ? image : image ? `${API_BASE}${image.startsWith("/") ? "" : "/"}${image}` : "";
+      return {
+        ...p,
+        id: String(p.id),
+        name: p.name || "",
+        slug: p.slug || String(p.id),
+        price: Number(p.price || 0),
+        discountPrice: Number(p.discountPrice || p.price || 0),
+        rating: Number(p.rating || 5),
+        reviews: Number(p.reviews || 0),
+        image: resolvedImage,
+        gallery: Array.isArray(p.gallery) ? p.gallery : resolvedImage ? [resolvedImage] : [],
+        category: p.category?.name || p.categoryName || "Silk Sarees",
+        subcategory: p.category?.name || p.subcategory || p.categoryName || "",
+        subcategorySlug: p.category?.slug || p.subcategorySlug || "",
+        fabric: p.fabric || "",
+        color: p.color || "",
+        stock: Number(p.stock || 0),
+        description: p.description || "",
+        featured: Boolean(p.isFeatured ?? p.featured),
+        trending: Boolean(p.isTrending ?? p.trending),
+        offer: Boolean(p.isOffer ?? p.offer),
+        newArrival: Boolean(p.isNewArrival ?? p.newArrival),
+        bestSeller: Boolean(p.isBestSeller ?? p.bestSeller),
+        categoryId: p.categoryId ?? p.category?.id,
+      };
+    });
+  }, [dbProducts]);
+
+  // A saved ID list takes precedence over automatic flags. No product data is modified.
+  const selectedProducts = (key: string, fallback: any[]) => {
+    const ids = sectionContent[key];
+    if (!Array.isArray(ids)) return fallback;
+    const byId = new Map(catalogProducts.map((p: any) => [String(p.id), p]));
+    return ids.map((id: any) => byId.get(String(id))).filter(Boolean);
+  };
+  const limit = Number(trendingSections.maxProducts) || 4;
+  const trending = selectedProducts("trendingProductIds", catalogProducts.filter((p: any) => p.trending)).slice(0, limit);
+  const newArrivals = selectedProducts("newArrivalsProductIds", catalogProducts.filter((p: any) => p.newArrival)).slice(0, limit);
+  const celebrity = selectedProducts("celebrityProductIds", catalogProducts.filter((p: any) => p.subcategory === "Celebrity Silks")).slice(0, limit);
+  const todaysDeals = selectedProducts("todaysDealsProductIds", catalogProducts.filter((p: any) => p.offer || (p.discountPrice && p.discountPrice < p.price)));
+  const bestSellers = selectedProducts("bestSellersProductIds", catalogProducts.filter((p: any) => p.bestSeller || p.trending));
+  const pochampalliProducts = selectedProducts("pochampalliProductIds", catalogProducts.filter(
+    (p: any) => p.subcategory === "Pure Cotton Silks" || p.subcategory === "Cotton Silks" || p.fabric === "Cotton Silk" || p.fabric === "Pure Cotton"
+  ));
 
   // Category sorting & selection if specified in settings, falling back to database categories, then local file categories
   const displayedCategories = useMemo(() => {
@@ -304,7 +348,12 @@ function HomePage() {
     const availableAssets = [saree1, saree2, saree3, saree4, saree5, saree6];
     const usedImages = new Set<string>();
 
-    return mergedList.slice(0, 5).map((item) => {
+    const selectedIds = settings?.categoriesSection?.selectedCategoryIds;
+    const chosenList = Array.isArray(selectedIds)
+      ? mergedList.filter((item) => selectedIds.map(String).includes(String(item.id)))
+      : mergedList.slice(0, 5);
+
+    return chosenList.map((item) => {
       let finalImg = item.image;
 
       // If image is missing, duplicate, or fallback, assign a unique one from our available assets
@@ -324,10 +373,10 @@ function HomePage() {
         image: finalImg,
       };
     });
-  }, [dbCategories, subcategories]);
+  }, [dbCategories, subcategories, settings?.categoriesSection?.selectedCategoryIds]);
 
   // Instagram gallery items
-  const galleryImgs = products.slice(0, 6).map((p) => p.image);
+  const galleryImgs = catalogProducts.slice(0, 6).map((p: any) => p.image);
   const galleryItemsToShow =
     gallery.items && Array.isArray(gallery.items) && gallery.items.length > 0
       ? gallery.items.map((item: any) => ({
@@ -625,7 +674,7 @@ function HomePage() {
 
       {/* Category-wise rows */}
       {toggles.featuredCollections !== false && toggles.categoryRows !== false && displayedCategories.map((cat: any) => {
-        const catProducts = products.filter(
+        const catProducts = catalogProducts.filter(
           (p) =>
             p.category === cat.name ||
             p.subcategory === cat.name ||

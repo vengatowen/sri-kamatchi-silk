@@ -227,6 +227,8 @@ function ImageUploadField({
 function AdminSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("general");
+  const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
+  const [catalogCategories, setCatalogCategories] = useState<any[]>([]);
 
   // Legacy & Specific states retained
   const [rzpActive, setRzpActive] = useState(true);
@@ -312,6 +314,12 @@ function AdminSettings() {
 
   useEffect(() => {
     fetchSettings();
+    fetch(`${API_BASE}/api/products`).then((response) => response.json()).then((res) => {
+      if (res.success && Array.isArray(res.data)) setCatalogProducts(res.data);
+    }).catch((error) => console.error("Unable to load products for homepage selection", error));
+    fetch(`${API_BASE}/api/categories`).then((response) => response.json()).then((res) => {
+      if (res.success && Array.isArray(res.data)) setCatalogCategories(res.data);
+    }).catch((error) => console.error("Unable to load categories for homepage selection", error));
   }, []);
 
   // Save Payment settings
@@ -1876,6 +1884,27 @@ function AdminSettings() {
                 </p>
               </div>
 
+              <div className="space-y-3 rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] p-4">
+                <div>
+                  <h4 className="text-sm font-bold text-[#3a1d13]">Choose categories shown in the circular homepage grid</h4>
+                  <p className="text-[10px] text-muted-foreground">Select the categories manually. If no selection has been saved yet, the current category behavior is preserved.</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {catalogCategories.map((category: any) => {
+                    const selected = Array.isArray(homeSettings.categoriesSection?.selectedCategoryIds) ? homeSettings.categoriesSection.selectedCategoryIds.map(String) : null;
+                    const checked = selected ? selected.includes(String(category.id)) : false;
+                    return <label key={category.id} className="flex items-center gap-2 rounded-lg border border-[#e8dfd8] bg-white p-2 text-xs">
+                      <input type="checkbox" checked={checked} onChange={(e) => {
+                        const current = Array.isArray(homeSettings.categoriesSection?.selectedCategoryIds) ? homeSettings.categoriesSection.selectedCategoryIds.map(String) : [];
+                        const next = e.target.checked ? [...current, String(category.id)] : current.filter((id: string) => id !== String(category.id));
+                        setHomeSettings({ ...homeSettings, categoriesSection: { ...homeSettings.categoriesSection, selectedCategoryIds: next } });
+                      }} />
+                      <span>{category.name}</span>
+                    </label>;
+                  })}
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
@@ -1996,7 +2025,34 @@ function AdminSettings() {
                     <input type="number" min="0" max="50" value={homeSettings.sectionContent?.[field] ?? fallback} onChange={(e) => setHomeSettings({ ...homeSettings, sectionContent: { ...(homeSettings.sectionContent || {}), [field]: Number(e.target.value) } })} className="w-full rounded-xl border border-[#e8dfd8] bg-white px-3.5 py-3 outline-none focus:border-[#d4af37]" />
                   </div>
                 ))}
-                <p className="text-[10px] text-muted-foreground">Product selection rules and existing product data are preserved. These settings control section labels and display counts only.</p>
+                <div className="space-y-3 rounded-xl border border-[#e8dfd8] bg-white p-3">
+                  <h5 className="text-xs font-bold text-[#3a1d13]">Select products manually</h5>
+                  {[
+                    ["todaysDealsProductIds", "Today's Deals"],
+                    ["trendingProductIds", "Trending Products"],
+                    ["bestSellersProductIds", "Best Selling Sarees"],
+                    ["pochampalliProductIds", "Pochampalli Sarees"],
+                    ["newArrivalsProductIds", "New Arrivals"],
+                    ["celebrityProductIds", "Celebrity Collection"]
+                  ].map(([field, label]) => {
+                    const selectedIds = Array.isArray(homeSettings.sectionContent?.[field]) ? homeSettings.sectionContent[field].map(String) : [];
+                    return <div key={field} className="space-y-2 border-t border-[#f3ede8] pt-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e5d53]">{label}</p>
+                      <div className="max-h-48 overflow-y-auto space-y-1">
+                        {catalogProducts.map((product: any) => <label key={product.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-[#fbfaf7]">
+                          <input type="checkbox" checked={selectedIds.includes(String(product.id))} onChange={(e) => {
+                            const current = Array.isArray(homeSettings.sectionContent?.[field]) ? homeSettings.sectionContent[field].map(String) : [];
+                            const next = e.target.checked ? [...current, String(product.id)] : current.filter((id: string) => id !== String(product.id));
+                            setHomeSettings({ ...homeSettings, sectionContent: { ...(homeSettings.sectionContent || {}), [field]: next } });
+                          }} />
+                          <span>{product.name}</span>
+                          <span className="ml-auto text-muted-foreground">{product.category?.name || product.categoryName || ""}</span>
+                        </label>)}
+                      </div>
+                    </div>;
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground">Selections use product IDs from the backend catalog. Product records and upload workflows are not modified.</p>
               </div>
 
               <div className="space-y-4">
