@@ -422,11 +422,21 @@ function HomePage() {
       ? mergedList.filter((item) => selectedIds.map(String).includes(String(item.id)))
       : mergedList.slice(0, 5);
 
-    return chosenList.map((item) => {
-      let finalImg = item.image;
+    const imageOverrides = settings?.categoriesSection?.imageOverrides || {};
 
-      // If image is missing, duplicate, or fallback, assign a unique one from our available assets
-      if (!finalImg || usedImages.has(String(finalImg))) {
+    return chosenList.map((item) => {
+      const overrideValue = imageOverrides[String(item.id)];
+      const hasCustomOverride = typeof overrideValue === "string" && overrideValue.trim().length > 0;
+      const resolvedOverride = hasCustomOverride
+        ? (/^(data:|blob:|https?:\/\/)/i.test(overrideValue)
+            ? overrideValue
+            : `${API_BASE}${overrideValue.startsWith("/") ? "" : "/"}${overrideValue}`)
+        : "";
+      let finalImg = hasCustomOverride ? resolvedOverride : item.image;
+
+      // Preserve a CMS override exactly as configured. Only use bundled fallback assets
+      // when no override exists and the category has no usable/unique image.
+      if (!hasCustomOverride && (!finalImg || usedImages.has(String(finalImg)))) {
         const unusedAsset = availableAssets.find((asset) => !usedImages.has(String(asset)));
         if (unusedAsset) {
           finalImg = unusedAsset;
@@ -442,7 +452,7 @@ function HomePage() {
         image: finalImg,
       };
     });
-  }, [dbCategories, subcategories, settings?.categoriesSection?.selectedCategoryIds]);
+  }, [dbCategories, subcategories, settings?.categoriesSection?.selectedCategoryIds, settings?.categoriesSection?.imageOverrides]);
 
   // Instagram gallery items
   const galleryImgs = catalogProducts.slice(0, 6).map((p: any) => p.image);
