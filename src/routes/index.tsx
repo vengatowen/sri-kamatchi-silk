@@ -50,16 +50,39 @@ function HomePage() {
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Support grouped and legacy hero settings. Data URLs and absolute URLs
-  // must be used as-is; only backend-relative paths should be prefixed with API_BASE.
-  const configuredHeroImage = settings?.hero?.imageUrl || settings?.heroImage || "";
+  // Resolve configured hero slides while preserving legacy single-image settings.
   const resolveHeroImage = (image: string) => {
-    if (/^(data:|blob:|https?:\/\/)/i.test(image)) return image;
+    if (!image || /^(data:|blob:|https?:\/\/)/i.test(image)) return image;
     return `${API_BASE}${image.startsWith("/") ? "" : "/"}${image}`;
   };
-  const images = configuredHeroImage
-    ? [resolveHeroImage(configuredHeroImage)]
-    : [sriKamatchiSilksBanner, sriKamatchiSilksBanner2];
+  const configuredHero = settings?.hero || {};
+  const configuredSlides = Array.isArray(configuredHero.slides)
+    ? configuredHero.slides.filter((slide: any) => slide && slide.imageUrl)
+    : [];
+  const heroSlides = configuredSlides.length > 0
+    ? configuredSlides.map((slide: any) => ({
+        ...slide,
+        imageUrl: resolveHeroImage(slide.imageUrl),
+        showText: slide.showText !== false,
+      }))
+    : (configuredHero.imageUrl || settings?.heroImage)
+      ? [{
+          imageUrl: resolveHeroImage(configuredHero.imageUrl || settings?.heroImage),
+          showText: configuredHero.showText !== false,
+          eyebrow: configuredHero.eyebrow || "",
+          title: configuredHero.title || settings?.heroTitle || "",
+          subtitle: configuredHero.subtitle || settings?.heroSubtitle || "",
+          primaryCtaText: configuredHero.primaryCtaText || "",
+          primaryCtaLink: configuredHero.primaryCtaLink || "/shop",
+          secondaryCtaText: configuredHero.secondaryCtaText || "",
+          secondaryCtaLink: configuredHero.secondaryCtaLink || "/shop",
+        }]
+      : [
+          { imageUrl: sriKamatchiSilksBanner, showText: false },
+          { imageUrl: sriKamatchiSilksBanner2, showText: false },
+        ];
+  const images = heroSlides.map((slide: any) => slide.imageUrl);
+  const activeHeroSlide = heroSlides[currentIndex % heroSlides.length] || heroSlides[0];
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
@@ -333,6 +356,7 @@ function HomePage() {
   return (
     <StoreLayout>
       {/* Hero / Banner Slider */}
+      {toggles.heroCarousel !== false && (
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -368,6 +392,47 @@ function HomePage() {
                   draggable="false"
                   className="w-full h-full object-cover object-center block select-none"
                 />
+                {activeHeroSlide?.showText && (
+                  <div className="absolute inset-0 z-[1] flex items-center">
+                    <div className="max-w-2xl px-6 py-8 sm:px-12 sm:py-12 text-white drop-shadow-md">
+                      {activeHeroSlide.eyebrow && (
+                        <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-gold mb-3">
+                          {activeHeroSlide.eyebrow}
+                        </p>
+                      )}
+                      {activeHeroSlide.title && (
+                        <h1 className="font-display text-2xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+                          {parseHeroTitle(activeHeroSlide.title)}
+                        </h1>
+                      )}
+                      {activeHeroSlide.subtitle && (
+                        <p className="mt-3 max-w-xl text-sm sm:text-base leading-relaxed text-white/90">
+                          {activeHeroSlide.subtitle}
+                        </p>
+                      )}
+                      {(activeHeroSlide.primaryCtaText || activeHeroSlide.secondaryCtaText) && (
+                        <div className="mt-6 flex flex-wrap gap-3">
+                          {activeHeroSlide.primaryCtaText && (
+                            <Link
+                              to={(activeHeroSlide.primaryCtaLink || "/shop") as any}
+                              className="inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold text-gold-foreground"
+                            >
+                              {activeHeroSlide.primaryCtaText} <ArrowRight size={15} />
+                            </Link>
+                          )}
+                          {activeHeroSlide.secondaryCtaText && (
+                            <Link
+                              to={(activeHeroSlide.secondaryCtaLink || "/shop") as any}
+                              className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-black/20 px-5 py-2.5 text-sm font-semibold text-white"
+                            >
+                              {activeHeroSlide.secondaryCtaText}
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -413,6 +478,7 @@ function HomePage() {
           </div>
         </motion.div>
       </section>
+      )}
 
       {/* Featured Categories (Circular grid) */}
       {toggles.featuredCollections !== false && (
@@ -461,12 +527,12 @@ function HomePage() {
       )}
 
       {/* Today's Deal section */}
-      {todaysDeals.length > 0 && (
+      {toggles.trendingArrivals !== false && todaysDeals.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Exclusive Offers</span>
-              <h2 className="font-display text-2xl font-bold text-foreground mt-1">Today's Deals</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{trendingSections.trendingEyebrow || "Exclusive Offers"}</span>
+              <h2 className="font-display text-2xl font-bold text-foreground mt-1">{trendingSections.trendingTitle || "Today's Deals"}</h2>
             </div>
             <Link
               to="/shop"
@@ -506,7 +572,7 @@ function HomePage() {
       )}
 
       {/* Best Selling section */}
-      {bestSellers.length > 0 && (
+      {toggles.trendingArrivals !== false && bestSellers.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
@@ -531,7 +597,7 @@ function HomePage() {
       )}
 
       {/* Pochampalli Pure Cotton Silk Sarees section */}
-      {pochampalliProducts.length > 0 && (
+      {toggles.curatedOccasions !== false && pochampalliProducts.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
@@ -556,7 +622,7 @@ function HomePage() {
       )}
 
       {/* Category-wise rows */}
-      {displayedCategories.map((cat: any) => {
+      {toggles.featuredCollections !== false && displayedCategories.map((cat: any) => {
         const catProducts = products.filter(
           (p) =>
             p.category === cat.name ||
@@ -617,9 +683,9 @@ function HomePage() {
                 <img
                   src={
                     weddingBannerData.imageUrl
-                      ? weddingBannerData.imageUrl.startsWith("http")
+                      ? /^(data:|blob:|https?:\/\/)/i.test(weddingBannerData.imageUrl)
                         ? weddingBannerData.imageUrl
-                        : `${API_BASE}${weddingBannerData.imageUrl}`
+                        : `${API_BASE}${weddingBannerData.imageUrl.startsWith("/") ? "" : "/"}${weddingBannerData.imageUrl}`
                       : saree2
                   }
                   alt={weddingBannerData.title}
@@ -651,9 +717,9 @@ function HomePage() {
                 <img
                   src={
                     festivalBannerData.imageUrl
-                      ? festivalBannerData.imageUrl.startsWith("http")
+                      ? /^(data:|blob:|https?:\/\/)/i.test(festivalBannerData.imageUrl)
                         ? festivalBannerData.imageUrl
-                        : `${API_BASE}${festivalBannerData.imageUrl}`
+                        : `${API_BASE}${festivalBannerData.imageUrl.startsWith("/") ? "" : "/"}${festivalBannerData.imageUrl}`
                       : saree5
                   }
                   alt={festivalBannerData.title}
@@ -674,8 +740,8 @@ function HomePage() {
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="flex items-end justify-between border-b border-border/40 pb-4 mb-8">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Fresh Off the Loom</span>
-              <h2 className="font-display text-2xl font-bold text-foreground mt-1">New Products</h2>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{trendingSections.newArrivalsEyebrow || "Fresh Off the Loom"}</span>
+              <h2 className="font-display text-2xl font-bold text-foreground mt-1">{trendingSections.newArrivalsTitle || "New Products"}</h2>
             </div>
             <Link
               to="/shop"
@@ -690,6 +756,103 @@ function HomePage() {
                 <ProductCard product={p} index={i} variant="square" />
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: curated occasions */}
+      {toggles.curatedOccasions !== false && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <SectionHeading eyebrow={occasionFinder.eyebrow} title={occasionFinder.title} subtitle={occasionFinder.subtitle} />
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {(occasionFinder.items || []).map((item: any, index: number) => {
+              const OccasionIcon = getIconByName(item.icon || "Sparkles");
+              return (
+                <Link key={item.name || index} to="/shop" className="flex flex-col items-center gap-3 rounded-2xl border border-border/60 bg-card p-5 text-center transition-colors hover:border-gold">
+                  <OccasionIcon size={24} className="text-primary" />
+                  <span className="text-xs font-semibold">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: why choose us */}
+      {toggles.promiseSection !== false && (
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+        <SectionHeading eyebrow={promiseSection.eyebrow} title={promiseSection.title} />
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {(promiseSection.cards || []).map((card: any, index: number) => {
+            const PromiseIcon = getIconByName(card.icon || "Award");
+            return (
+              <div key={card.title || index} className="rounded-2xl border border-border/60 bg-card p-5">
+                <PromiseIcon size={24} className="text-primary" />
+                <h3 className="mt-3 font-display text-base font-semibold">{card.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{card.text}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+      )}
+
+      {/* Boutique options: celebrity collection */}
+      {toggles.celebritySection !== false && celebrity.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <SectionHeading eyebrow={trendingSections.celebrityEyebrow || "As Seen on Stars"} title={trendingSections.celebrityTitle || "Celebrity Inspired"} />
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 justify-items-center">
+            {celebrity.slice(0, 4).map((p, index) => (
+              <div key={p.id} className="w-full">
+                <ProductCard product={p} index={index} variant="square" />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: testimonials */}
+      {toggles.customerTestimonials !== false && dbTestimonials.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <SectionHeading eyebrow="Customer Stories" title="Loved by Our Customers" />
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {dbTestimonials.map((item: any, index: number) => (
+              <article key={item.id || index} className="rounded-2xl border border-border/60 bg-card p-5">
+                <div className="flex items-center gap-1 text-gold" aria-label={`${item.rating || 5} out of 5 stars`}>
+                  {Array.from({ length: Math.max(1, Math.min(5, Number(item.rating) || 5)) }).map((_, starIndex) => <span key={starIndex}>★</span>)}
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">“{item.text || item.message || ""}”</p>
+                <p className="mt-4 text-sm font-semibold">{item.name || "Customer"}</p>
+                {item.location && <p className="text-xs text-muted-foreground">{item.location}</p>}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: Instagram gallery */}
+      {toggles.instagramGallery !== false && galleryItemsToShow.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <SectionHeading eyebrow={gallery.eyebrow} title={gallery.title} subtitle={gallery.subtitle} />
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {galleryItemsToShow.map((item: any, index: number) => (
+              <a key={index} href={item.link && item.link !== "#" ? item.link : undefined} className="block aspect-square overflow-hidden rounded-xl border border-border/60 bg-card">
+                <img src={item.imageUrl} alt={item.caption || `Sri Kamatchi Silk gallery ${index + 1}`} loading="lazy" className="h-full w-full object-cover" />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Boutique options: newsletter */}
+      {toggles.newsletter !== false && (
+        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+          <div className="rounded-3xl bg-gradient-maroon px-6 py-10 text-center text-primary-foreground sm:px-12">
+            <h2 className="font-display text-2xl font-bold sm:text-3xl">{newsletter.title}</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-primary-foreground/80">{newsletter.subtitle}</p>
+            <Link to="/contact" className="mt-6 inline-flex rounded-full bg-gold px-6 py-3 text-sm font-semibold text-gold-foreground">
+              {newsletter.buttonText || "Contact Us"}
+            </Link>
           </div>
         </section>
       )}
