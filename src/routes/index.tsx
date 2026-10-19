@@ -40,16 +40,70 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+const HOMEPAGE_CACHE_KEY = "sk-homepage-data-v1";
+const HOMEPAGE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const HOMEPAGE_CACHE_MAX_CHARS = 1_500_000;
+
+type HomepageCache = {
+  savedAt: number;
+  settings: any;
+  categories: any[];
+  products: any[];
+};
+
+function readHomepageCache(): HomepageCache | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.sessionStorage.getItem(HOMEPAGE_CACHE_KEY);
+    if (!raw || raw.length > HOMEPAGE_CACHE_MAX_CHARS) return null;
+    const cached = JSON.parse(raw) as HomepageCache;
+    if (
+      !cached ||
+      !cached.savedAt ||
+      Date.now() - cached.savedAt > HOMEPAGE_CACHE_TTL_MS ||
+      !cached.settings ||
+      !Array.isArray(cached.categories) ||
+      !Array.isArray(cached.products)
+    ) {
+      window.sessionStorage.removeItem(HOMEPAGE_CACHE_KEY);
+      return null;
+    }
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function writeHomepageCache(settings: any, categories: any[], products: any[]) {
+  try {
+    if (typeof window === "undefined") return;
+    const value: HomepageCache = {
+      savedAt: Date.now(),
+      settings,
+      categories,
+      products,
+    };
+    const serialized = JSON.stringify(value);
+    // Avoid synchronous storage work and quota errors for unusually large catalogs.
+    if (serialized.length <= HOMEPAGE_CACHE_MAX_CHARS) {
+      window.sessionStorage.setItem(HOMEPAGE_CACHE_KEY, serialized);
+    }
+  } catch {
+    // Caching is an optimization only; the live API remains the source of truth.
+  }
+}
+
 const getIconByName = (name: string) => {
   const IconComponent = (Icons as any)[name];
   return IconComponent || HelpCircle;
 };
 
 function HomePage() {
-  const [settings, setSettings] = useState<any>(null);
-  const [dbCategories, setDbCategories] = useState<any[]>([]);
-  const [dbProducts, setDbProducts] = useState<any[] | null>(null);
-  const [isHomepageLoading, setIsHomepageLoading] = useState(true);
+  const [initialHomepageCache] = useState<HomepageCache | null>(() => readHomepageCache());
+  const [settings, setSettings] = useState<any>(initialHomepageCache?.settings ?? null);
+  const [dbCategories, setDbCategories] = useState<any[]>(initialHomepageCache?.categories ?? []);
+  const [dbProducts, setDbProducts] = useState<any[] | null>(initialHomepageCache?.products ?? null);
+  const [isHomepageLoading, setIsHomepageLoading] = useState(!initialHomepageCache);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Resolve configured hero slides while preserving legacy single-image settings.
@@ -115,31 +169,32 @@ function HomePage() {
 
       const [settingsResult, categoriesResult, productsResult] = results;
 
-      if (settingsResult.status === "fulfilled" && settingsResult.value.success && settingsResult.value.data) {
-        setSettings(settingsResult.value.data);
-      } else {
-        console.error(
-          "Error fetching homepage settings:",
-          settingsResult.status === "rejected" ? settingsResult.reason : settingsResult.value
-        );
-      }
+      const freshSettings =
+        settingsResult.status === "fulfilled" && settingsResult.value.success && settingsResult.value.data
+          ? settingsResult.value.data
+          : null;
+      const freshCategories =
+        categoriesResult.status === "fulfilled" && categoriesResult.value.success && Array.isArray(categoriesResult.value.data)
+          ? categoriesResult.value.data
+          : null;
+      const freshProducts =
+        productsResult.status === "fulfilled" && productsResult.value.success && Array.isArray(productsResult.value.data)
+          ? productsResult.value.data
+          : null;
 
-      if (categoriesResult.status === "fulfilled" && categoriesResult.value.success && Array.isArray(categoriesResult.value.data)) {
-        setDbCategories(categoriesResult.value.data);
-      } else {
-        console.error(
-          "Error fetching categories:",
-          categoriesResult.status === "rejected" ? categoriesResult.reason : categoriesResult.value
-        );
-      }
+      if (freshSettings) setSettings(freshSettings);
+      else console.error("Error fetching homepage settings:", settingsResult.status === "rejected" ? settingsResult.reason : settingsResult.value);
 
-      if (productsResult.status === "fulfilled" && productsResult.value.success && Array.isArray(productsResult.value.data)) {
-        setDbProducts(productsResult.value.data);
-      } else {
-        console.error(
-          "Error fetching homepage products:",
-          productsResult.status === "rejected" ? productsResult.reason : productsResult.value
-        );
+      if (freshCategories) setDbCategories(freshCategories);
+      else console.error("Error fetching categories:", categoriesResult.status === "rejected" ? categoriesResult.reason : categoriesResult.value);
+
+      if (freshProducts) setDbProducts(freshProducts);
+      else console.error("Error fetching homepage products:", productsResult.status === "rejected" ? productsResult.reason : productsResult.value);
+
+      // Cache only a complete, successful API snapshot so a partial response never
+      // replaces a known-good set of admin-selected content.
+      if (freshSettings && freshCategories && freshProducts) {
+        writeHomepageCache(freshSettings, freshCategories, freshProducts);
       }
 
       setIsHomepageLoading(false);
@@ -471,6 +526,8 @@ function HomePage() {
                 <img
                   src={images[currentIndex % images.length]}
                   alt={`Sri Kamatchi Silks Banner ${(currentIndex % images.length) + 1}`}
+                  fetchPriority="high"
+                  decoding="async"
                   draggable="false"
                   className="w-full h-full object-cover object-center block select-none"
                 />
@@ -635,6 +692,8 @@ function HomePage() {
                   <img
                     src={p.image}
                     alt={p.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 </div>
