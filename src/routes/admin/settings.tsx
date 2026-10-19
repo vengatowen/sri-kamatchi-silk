@@ -992,74 +992,6 @@ function AdminSettings() {
                 </p>
               </div>
 
-              <div className="space-y-3 rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] p-4">
-                <div>
-                  <h4 className="text-sm font-bold text-[#3a1d13]">Customize collection card images</h4>
-                  <p className="text-[10px] text-muted-foreground">Upload a compressed image or paste a public image URL for each category. These overrides are saved with the homepage settings and take priority over category/default images.</p>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {catalogCategories.map((category: any) => {
-                    const imageOverrides = homeSettings.categoriesSection?.imageOverrides || {};
-                    const override = imageOverrides[String(category.id)] || "";
-                    const categoryImage = category.image
-                      ? (/^(data:|blob:|https?:\\/\\/)/i.test(category.image)
-                          ? category.image
-                          : `${API_BASE}${category.image.startsWith("/") ? "" : "/"}${category.image}`)
-                      : "";
-                    return (
-                      <div key={category.id} className="rounded-xl border border-[#e8dfd8] bg-white p-3">
-                        <p className="mb-2 text-xs font-semibold text-[#3a1d13]">{category.name}</p>
-                        <ImageUploadField
-                          label="Homepage image"
-                          value={override || categoryImage}
-                          onChange={(val) => setHomeSettings({
-                            ...homeSettings,
-                            categoriesSection: {
-                              ...homeSettings.categoriesSection,
-                              imageOverrides: {
-                                ...imageOverrides,
-                                [String(category.id)]: val,
-                              },
-                            },
-                          })}
-                          onRemove={() => {
-                            const nextOverrides = { ...imageOverrides };
-                            delete nextOverrides[String(category.id)];
-                            setHomeSettings({
-                              ...homeSettings,
-                              categoriesSection: {
-                                ...homeSettings.categoriesSection,
-                                imageOverrides: nextOverrides,
-                              },
-                            });
-                          }}
-                          recommendedSize="Recommended: square image, 800x800 px"
-                        />
-                        {override && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const nextOverrides = { ...imageOverrides };
-                              delete nextOverrides[String(category.id)];
-                              setHomeSettings({
-                                ...homeSettings,
-                                categoriesSection: {
-                                  ...homeSettings.categoriesSection,
-                                  imageOverrides: nextOverrides,
-                                },
-                              });
-                            }}
-                            className="mt-2 text-[11px] font-semibold text-[#6e5d53] hover:underline"
-                          >
-                            Use category default image
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
@@ -1977,6 +1909,74 @@ function AdminSettings() {
                       }} />
                       <span>{category.name}</span>
                     </label>;
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] p-4">
+                <div>
+                  <h4 className="text-sm font-bold text-[#3a1d13]">Customize collection card images</h4>
+                  <p className="text-[10px] text-muted-foreground">Upload a compressed image or paste a public image URL for each category. These overrides are saved with the homepage settings and take priority over category/default images.</p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {catalogCategories.map((category: any) => {
+                    const imageOverrides = homeSettings.categoriesSection?.imageOverrides || {};
+                    const override = imageOverrides[String(category.id)] || "";
+                    const categoryImage = category.image
+                      ? (/^(data:|blob:|https?:\\/\\/)/i.test(category.image)
+                          ? category.image
+                          : `${API_BASE}${category.image.startsWith("/") ? "" : "/"}${category.image}`)
+                      : "";
+                    return (
+                      <div key={category.id} className="rounded-xl border border-[#e8dfd8] bg-white p-3">
+                        <p className="mb-2 text-xs font-semibold text-[#3a1d13]">{category.name}</p>
+                        <ImageUploadField
+                          label="Homepage image"
+                          value={override || categoryImage}
+                          onChange={(val) => setHomeSettings({
+                            ...homeSettings,
+                            categoriesSection: {
+                              ...homeSettings.categoriesSection,
+                              imageOverrides: {
+                                ...imageOverrides,
+                                [String(category.id)]: val,
+                              },
+                            },
+                          })}
+                          onRemove={() => {
+                            const nextOverrides = { ...imageOverrides };
+                            delete nextOverrides[String(category.id)];
+                            setHomeSettings({
+                              ...homeSettings,
+                              categoriesSection: {
+                                ...homeSettings.categoriesSection,
+                                imageOverrides: nextOverrides,
+                              },
+                            });
+                          }}
+                          recommendedSize="Recommended: square image, 800x800 px"
+                        />
+                        {override && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextOverrides = { ...imageOverrides };
+                              delete nextOverrides[String(category.id)];
+                              setHomeSettings({
+                                ...homeSettings,
+                                categoriesSection: {
+                                  ...homeSettings.categoriesSection,
+                                  imageOverrides: nextOverrides,
+                                },
+                              });
+                            }}
+                            className="mt-2 text-[11px] font-semibold text-[#6e5d53] hover:underline"
+                          >
+                            Use category default image
+                          </button>
+                        )}
+                      </div>
+                    );
                   })}
                 </div>
               </div>
