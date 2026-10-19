@@ -51,14 +51,24 @@ export function Navbar() {
 
   const contactNumber = String(header?.contactNumber || "").replace(/\D/g, "");
   const whatsappUrl = contactNumber ? `https://wa.me/${contactNumber}` : "https://wa.me/919443210987";
-  const navLinks = Array.isArray(header?.navLinks) && header.navLinks.length > 0
+  const navLabels = header?.navLabels || {};
+  const navLinks = (Array.isArray(header?.navLinks) && header.navLinks.length > 0
     ? header.navLinks
     : [
         { label: "Home", to: "/" },
-        { label: "All Categories", to: "/shop" },
+        { label: "Silk Sarees", to: "/silk-sarees" },
         { label: "Shop", to: "/shop" },
+        { label: "About", to: "/about" },
         { label: "Contact", to: whatsappUrl },
-      ];
+      ]).map((item: any) => ({
+        ...item,
+        label: item.to === "/" ? (navLabels.home || item.label)
+          : item.to === "/silk-sarees" || /semi silks|silk cotton/i.test(item.label || "") ? (navLabels.silkSarees || item.label)
+          : item.to === "/shop" ? (navLabels.shop || item.label)
+          : item.to === "/about" ? (navLabels.about || item.label)
+          : /contact/i.test(item.label || "") ? (navLabels.contact || item.label)
+          : item.label,
+      }));
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
