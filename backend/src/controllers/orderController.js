@@ -1,5 +1,12 @@
 const prisma = require("../config/prisma");
 
+const getStateShippingFee = (state) => {
+  const normalized = String(state || "").trim().toLowerCase();
+  if (normalized === "tamil nadu") return 40;
+  if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return 60;
+  return normalized ? 80 : null;
+};
+
 const createOrder = async (req, res) => {
   try {
     const {
@@ -48,9 +55,13 @@ const createOrder = async (req, res) => {
     }
 
     // 4. Fetch dynamic logistics configurations
-    const shippingSettings = await prisma.shippingSettings.findFirst();
-    const freeShippingCap = shippingSettings ? shippingSettings.freeShippingAbove : 4999;
-    const standardShippingFee = shippingSettings ? shippingSettings.shippingCharge : 99;
+    const stateShippingFee = getStateShippingFee(state);
+    if (stateShippingFee === null) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid Indian state to calculate shipping.",
+      });
+    }
     const codEnabled = shippingSettings ? shippingSettings.codEnabled : true;
 
     if (!codEnabled) {
@@ -99,8 +110,8 @@ const createOrder = async (req, res) => {
         });
       }
 
-      // Apply India Shipping Fee Logic
-      const shippingFee = subtotal >= freeShippingCap ? 0 : standardShippingFee;
+      // Shipping is based on the delivery state, as shown in the cart.
+      const shippingFee = subtotal === 0 ? 0 : stateShippingFee;
       const totalAmount = subtotal + shippingFee;
 
       // Create order
