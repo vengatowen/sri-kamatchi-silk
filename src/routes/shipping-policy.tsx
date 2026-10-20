@@ -21,7 +21,7 @@ export const Route = createFileRoute("/shipping-policy")({
           },
           {
             heading: "Shipping Charges",
-            body: "We offer free shipping on all orders above ₹4,999. A flat charge of ₹99 applies to orders below this amount.",
+            body: "Shipping is charged per saree/item based on delivery location: Tamil Nadu ₹30 per item, Puducherry ₹30 per item, Karnataka, Kerala, Telangana and Andhra Pradesh ₹60 per item, and other Indian states including North India ₹80 per item. The per-item fee is multiplied by the total quantity in the cart. Orders at or above the Free Shipping Cap set by the store qualify for free shipping.",
           },
           {
             heading: "Coverage",
