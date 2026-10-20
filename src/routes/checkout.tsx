@@ -38,11 +38,19 @@ function CheckoutPage() {
   const [country, setCountry] = useState("India");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const [state, setState] = useState(() => {
+    try { return localStorage.getItem("sk-shipping-state") || ""; } catch { return ""; }
+  });
   const [pincode, setPincode] = useState("");
   const [landmark, setLandmark] = useState("");
 
   const [isPlacing, setIsPlacing] = useState(false);
+  useEffect(() => {
+    try {
+      if (state) localStorage.setItem("sk-shipping-state", state);
+      else localStorage.removeItem("sk-shipping-state");
+    } catch { /* Checkout remains usable if storage is unavailable. */ }
+  }, [state]);
 
   // 1. Fetch shipping logistics settings from Neon dynamically
   useEffect(() => {
@@ -78,12 +86,14 @@ function CheckoutPage() {
   }, []);
 
   // 3. Shipping fee calculations based on dynamic rules
-  const shipping =
-    country.trim().toLowerCase() === "india"
-      ? cartSubtotal >= freeShippingAbove || cartSubtotal === 0
-        ? 0
-        : shippingCharge
-      : 0;
+  const shippingRate = (value: string) => {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "tamil nadu") return 40;
+    if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return 60;
+    return value.trim() ? 80 : null;
+  };
+  const stateShipping = shippingRate(state);
+  const shipping = country.trim().toLowerCase() === "india" && cartSubtotal > 0 ? (stateShipping ?? 0) : 0;
   const total = cartSubtotal + shipping;
 
   const navigate = useNavigate();
@@ -368,14 +378,16 @@ Order Details:
                   onChange={(e) => setCity(e.target.value)}
                   disabled={isPlacing}
                 />
-                <input
+                <select
                   required
-                  placeholder="State"
-                  className={field}
+                  aria-label="State"
+                  className={field + " cursor-pointer"}
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   disabled={isPlacing}
-                />
+                >
+                  <option value="">Select state</option><option value="Tamil Nadu">Tamil Nadu</option><option value="Karnataka">Karnataka</option><option value="Kerala">Kerala</option><option value="Telangana">Telangana</option><option value="Andhra Pradesh">Andhra Pradesh</option><option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option><option value="Arunachal Pradesh">Arunachal Pradesh</option><option value="Assam">Assam</option><option value="Bihar">Bihar</option><option value="Chandigarh">Chandigarh</option><option value="Chhattisgarh">Chhattisgarh</option><option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option><option value="Delhi">Delhi</option><option value="Goa">Goa</option><option value="Gujarat">Gujarat</option><option value="Haryana">Haryana</option><option value="Himachal Pradesh">Himachal Pradesh</option><option value="Jammu and Kashmir">Jammu and Kashmir</option><option value="Jharkhand">Jharkhand</option><option value="Ladakh">Ladakh</option><option value="Lakshadweep">Lakshadweep</option><option value="Madhya Pradesh">Madhya Pradesh</option><option value="Maharashtra">Maharashtra</option><option value="Manipur">Manipur</option><option value="Meghalaya">Meghalaya</option><option value="Mizoram">Mizoram</option><option value="Nagaland">Nagaland</option><option value="Odisha">Odisha</option><option value="Puducherry">Puducherry</option><option value="Punjab">Punjab</option><option value="Rajasthan">Rajasthan</option><option value="Sikkim">Sikkim</option><option value="Tripura">Tripura</option><option value="Uttar Pradesh">Uttar Pradesh</option><option value="Uttarakhand">Uttarakhand</option><option value="West Bengal">West Bengal</option>
+                </select>
                 <input
                   required
                   placeholder="Pincode"
@@ -482,7 +494,7 @@ Order Details:
                 <>
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Shipping</dt>
-                    <dd>{shipping === 0 ? "Free" : formatINR(shipping)}</dd>
+                    <dd>{cartSubtotal === 0 ? "—" : stateShipping === null ? "Select state" : formatINR(shipping)}</dd>
                   </div>
                   <div className="flex justify-between border-t border-border pt-3 text-base font-bold">
                     <dt>Total</dt>
