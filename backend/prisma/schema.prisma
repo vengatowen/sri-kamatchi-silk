@@ -155,6 +155,7 @@ model ShippingSettings {
 
   freeShippingAbove   Float
   shippingCharge      Float
+  stateShippingFees   Json?
 
   codEnabled          Boolean     @default(true)
 

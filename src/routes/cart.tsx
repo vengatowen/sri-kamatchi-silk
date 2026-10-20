@@ -5,6 +5,7 @@ import { StoreLayout } from "@/components/store/StoreLayout";
 import { EmptyState } from "@/components/store/EmptyState";
 import { useStore } from "@/store/StoreContext";
 import { formatINR } from "@/lib/format";
+import { API_BASE } from "@/lib/api";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({ meta: [{ title: "Shopping Cart — Sri Kamatchi Silk" }] }),
@@ -14,9 +15,19 @@ export const Route = createFileRoute("/cart")({
 function CartPage() {
   const { cart, updateQuantity, removeFromCart, cartSubtotal } = useStore();
   const [coupon, setCoupon] = useState("");
+  const [shippingFees, setShippingFees] = useState({ tamilNadu: 30, pondicherry: 30, southStates: 60, otherStates: 80 });
+  const [freeShippingAbove, setFreeShippingAbove] = useState(4999);
   const [shippingState, setShippingState] = useState(() => {
     try { return localStorage.getItem("sk-shipping-state") || ""; } catch { return ""; }
   });
+  useEffect(() => {
+    fetch(`${API_BASE}/api/settings/shipping`).then((response) => response.json()).then((res) => {
+      if (res.success && res.data) {
+        setFreeShippingAbove(Number(res.data.freeShippingAbove ?? 4999));
+        setShippingFees({ tamilNadu: 30, pondicherry: 30, southStates: 60, otherStates: 80, ...(res.data.stateShippingFees || {}) });
+      }
+    }).catch((error) => console.error("Unable to load shipping rates", error));
+  }, []);
   useEffect(() => {
     try {
       if (shippingState) localStorage.setItem("sk-shipping-state", shippingState);
@@ -25,12 +36,14 @@ function CartPage() {
   }, [shippingState]);
   const shippingRate = (value: string) => {
     const normalized = value.trim().toLowerCase();
-    if (normalized === "tamil nadu") return 40;
-    if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return 60;
-    return value ? 80 : null;
+    if (normalized === "tamil nadu") return Number(shippingFees.tamilNadu);
+    if (["puducherry", "pondicherry"].includes(normalized)) return Number(shippingFees.pondicherry);
+    if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return Number(shippingFees.southStates);
+    return value.trim() ? Number(shippingFees.otherStates) : null;
   };
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const rate = shippingRate(shippingState);
-  const shipping = cartSubtotal === 0 ? 0 : (rate ?? 0);
+  const shipping = cartSubtotal === 0 || cartSubtotal >= freeShippingAbove ? 0 : (rate ?? 0) * itemCount;
   const total = cartSubtotal + shipping;
 
   return (
@@ -149,7 +162,7 @@ function CartPage() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Shipping</dt>
-                  <dd className="font-medium">{cartSubtotal === 0 ? "—" : rate === null ? "Select state" : formatINR(shipping)}</dd>
+                  <dd className="font-medium">{cartSubtotal === 0 ? "—" : cartSubtotal >= freeShippingAbove ? "Free" : rate === null ? "Select state" : formatINR(shipping)}</dd>
                 </div>
                 <div className="flex justify-between border-t border-border pt-3 text-base">
                   <dt className="font-semibold">Total</dt>

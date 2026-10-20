@@ -28,6 +28,7 @@ function CheckoutPage() {
 
   // Dynamic logistics settings states
   const [shippingCharge, setShippingCharge] = useState(99);
+  const [stateShippingFees, setStateShippingFees] = useState({ tamilNadu: 30, pondicherry: 30, southStates: 60, otherStates: 80 });
   const [freeShippingAbove, setFreeShippingAbove] = useState(4999);
   const [codEnabled, setCodEnabled] = useState(true);
 
@@ -60,6 +61,7 @@ function CheckoutPage() {
         const res = await response.json();
         if (res.success && res.data) {
           setShippingCharge(res.data.shippingCharge);
+          setStateShippingFees({ tamilNadu: 30, pondicherry: 30, southStates: 60, otherStates: 80, ...(res.data.stateShippingFees || {}) });
           setFreeShippingAbove(res.data.freeShippingAbove);
           setCodEnabled(res.data.codEnabled);
         }
@@ -88,12 +90,16 @@ function CheckoutPage() {
   // 3. Shipping fee calculations based on dynamic rules
   const shippingRate = (value: string) => {
     const normalized = value.trim().toLowerCase();
-    if (normalized === "tamil nadu") return 40;
-    if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return 60;
-    return value.trim() ? 80 : null;
+    if (normalized === "tamil nadu") return Number(stateShippingFees.tamilNadu);
+    if (["puducherry", "pondicherry"].includes(normalized)) return Number(stateShippingFees.pondicherry);
+    if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return Number(stateShippingFees.southStates);
+    return value.trim() ? Number(stateShippingFees.otherStates) : null;
   };
   const stateShipping = shippingRate(state);
-  const shipping = country.trim().toLowerCase() === "india" && cartSubtotal > 0 ? (stateShipping ?? 0) : 0;
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const shipping = country.trim().toLowerCase() === "india" && cartSubtotal > 0
+    ? (cartSubtotal >= freeShippingAbove ? 0 : (stateShipping ?? 0) * itemCount)
+    : 0;
   const total = cartSubtotal + shipping;
 
   const navigate = useNavigate();
@@ -494,7 +500,7 @@ Order Details:
                 <>
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Shipping</dt>
-                    <dd>{cartSubtotal === 0 ? "—" : stateShipping === null ? "Select state" : formatINR(shipping)}</dd>
+                    <dd>{cartSubtotal === 0 ? "—" : cartSubtotal >= freeShippingAbove ? "Free" : stateShipping === null ? "Select state" : formatINR(shipping)}</dd>
                   </div>
                   <div className="flex justify-between border-t border-border pt-3 text-base font-bold">
                     <dt>Total</dt>

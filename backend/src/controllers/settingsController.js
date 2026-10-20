@@ -1,5 +1,8 @@
 const prisma = require("../config/prisma");
 
+const DEFAULT_STATE_SHIPPING_FEES = { tamilNadu: 30, pondicherry: 30, southStates: 60, otherStates: 80 };
+const resolveStateShippingFees = (fees) => ({ ...DEFAULT_STATE_SHIPPING_FEES, ...(fees && typeof fees === "object" ? fees : {}) });
+
 // --- Shipping Settings ---
 const getShippingSettings = async (req, res) => {
   try {
@@ -11,6 +14,7 @@ const getShippingSettings = async (req, res) => {
         data: {
           freeShippingAbove: 4999,
           shippingCharge: 99,
+          stateShippingFees: DEFAULT_STATE_SHIPPING_FEES,
           codEnabled: true,
           deliveryDays: 5,
         },
@@ -32,7 +36,7 @@ const getShippingSettings = async (req, res) => {
 
 const updateShippingSettings = async (req, res) => {
   try {
-    const { freeShippingAbove, shippingCharge, codEnabled, deliveryDays } = req.body;
+    const { freeShippingAbove, shippingCharge, stateShippingFees, codEnabled, deliveryDays } = req.body;
 
     let settings = await prisma.shippingSettings.findFirst();
 
@@ -41,6 +45,7 @@ const updateShippingSettings = async (req, res) => {
         data: {
           freeShippingAbove: parseFloat(freeShippingAbove || 4999),
           shippingCharge: parseFloat(shippingCharge || 99),
+          stateShippingFees: resolveStateShippingFees(stateShippingFees),
           codEnabled: codEnabled !== undefined ? codEnabled : true,
           deliveryDays: parseInt(deliveryDays || 5),
         },
@@ -55,6 +60,7 @@ const updateShippingSettings = async (req, res) => {
               : settings.freeShippingAbove,
           shippingCharge:
             shippingCharge !== undefined ? parseFloat(shippingCharge) : settings.shippingCharge,
+          stateShippingFees: stateShippingFees !== undefined ? resolveStateShippingFees(stateShippingFees) : (settings.stateShippingFees || DEFAULT_STATE_SHIPPING_FEES),
           codEnabled: codEnabled !== undefined ? codEnabled : settings.codEnabled,
           deliveryDays: deliveryDays !== undefined ? parseInt(deliveryDays) : settings.deliveryDays,
         },
