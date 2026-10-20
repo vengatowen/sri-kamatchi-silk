@@ -2,11 +2,14 @@ const prisma = require("../config/prisma");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 
-const getStateShippingFee = (state) => {
+const DEFAULT_STATE_SHIPPING_FEES = { tamilNadu: 30, pondicherry: 30, southStates: 60, otherStates: 80 };
+
+const getStateShippingFee = (state, fees = DEFAULT_STATE_SHIPPING_FEES) => {
   const normalized = String(state || "").trim().toLowerCase();
-  if (normalized === "tamil nadu") return 40;
-  if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return 60;
-  return normalized ? 80 : null;
+  if (normalized === "tamil nadu") return Number(fees.tamilNadu);
+  if (["puducherry", "pondicherry"].includes(normalized)) return Number(fees.pondicherry);
+  if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return Number(fees.southStates);
+  return normalized ? Number(fees.otherStates) : null;
 };
 
 // Create a real Razorpay Order
@@ -47,13 +50,8 @@ const createRazorpayOrder = async (req, res) => {
     }
 
     // 3. Load dynamic settings
-    const stateShippingFee = getStateShippingFee(state);
-    if (stateShippingFee === null) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide a valid Indian state to calculate shipping.",
-      });
-    }
+    const shippingSettings = await prisma.shippingSettings.findFirst();
+    const freeShippingCap = shippingSettings ? shippingSettings.freeShippingAbove : 4999;
 
     let paymentSettings = await prisma.paymentSettings.findFirst();
     if (!paymentSettings || !paymentSettings.razorpayEnabled) {
@@ -116,8 +114,13 @@ const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    // 5. Calculate shipping from the delivery state, matching the cart.
-    const shippingFee = subtotal === 0 ? 0 : stateShippingFee;
+    const fees = { ...DEFAULT_STATE_SHIPPING_FEES, ...(shippingSettings?.stateShippingFees || {}) };
+    const stateShippingFee = getStateShippingFee(state, fees);
+    if (stateShippingFee === null) {
+      return res.status(400).json({ success: false, message: "Please provide a valid Indian state to calculate shipping." });
+    }
+    const totalQuantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    const shippingFee = subtotal === 0 || subtotal >= freeShippingCap ? 0 : stateShippingFee * totalQuantity;
     const totalAmount = subtotal + shippingFee;
 
     // 6. Create internal order in DB in PENDING payment status
