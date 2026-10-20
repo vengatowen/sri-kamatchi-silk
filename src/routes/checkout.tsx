@@ -500,7 +500,7 @@ Order Details:
                 <>
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Shipping</dt>
-                    <dd>{cartSubtotal === 0 ? "—" : stateShipping === null ? "Select state" : formatINR(shipping)}</dd>
+                    <dd>{cartSubtotal === 0 ? "—" : cartSubtotal >= freeShippingAbove ? "Free" : stateShipping === null ? "Select state" : formatINR(shipping)}</dd>
                   </div>
                   <div className="flex justify-between border-t border-border pt-3 text-base font-bold">
                     <dt>Total</dt>
