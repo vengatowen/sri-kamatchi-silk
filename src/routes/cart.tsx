@@ -153,7 +153,7 @@ function CartPage() {
                 </div>
                 <div className="flex justify-between border-t border-border pt-3 text-base">
                   <dt className="font-semibold">Total</dt>
-                  <dd className="font-bold text-primary">{formatINR(total)}</dd>
+                  <dd className="font-bold text-primary">{cartSubtotal > 0 && rate === null ? "Select state" : formatINR(total)}</dd>
                 </div>
               </dl>
               <Link
