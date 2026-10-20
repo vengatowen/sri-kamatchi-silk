@@ -21,7 +21,7 @@ export const Route = createFileRoute("/return-policy")({
           },
           {
             heading: "Report a Damaged Saree",
-            body: "Contact Sri Kamatchi Silk customer support within 48 hours of delivery with your order details and clear photos or video showing the damage. Keep the saree and its original packaging until our team responds.",
+            body: "Contact Sri Kamatchi Silk customer support as soon as possible with your order details and clear photos or video showing the damage. Keep the saree and its original packaging until our team responds.",
           },
           {
             heading: "Review and Resolution",
