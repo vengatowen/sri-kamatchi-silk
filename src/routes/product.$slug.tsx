@@ -415,21 +415,6 @@ function ProductPage() {
               </Link>
             </div>
 
-            <div className="mt-6 grid grid-cols-3 gap-3 text-center text-xs text-muted-foreground">
-              <div className="rounded-xl border border-border bg-card p-3">
-                <Truck className="mx-auto text-gold" size={20} />
-                <p className="mt-2">Free shipping over ₹4,999</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-3">
-                <RotateCcw className="mx-auto text-gold" size={20} />
-                <p className="mt-2">7-day easy returns</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-3">
-                <ShieldCheck className="mx-auto text-gold" size={20} />
-                <p className="mt-2">100% authentic silk</p>
-              </div>
-            </div>
-
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-foreground">Description</h2>
               <p className="mt-2 leading-relaxed text-muted-foreground">{product.description}</p>
