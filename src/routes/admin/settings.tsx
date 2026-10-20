@@ -238,6 +238,7 @@ function AdminSettings() {
 
   const [shipFreeAbove, setShipFreeAbove] = useState(4999);
   const [shipCharge, setShipCharge] = useState(99);
+  const [stateShippingFees, setStateShippingFees] = useState({ tamilNadu: 30, pondicherry: 30, southStates: 60, otherStates: 80 });
   const [shipCod, setShipCod] = useState(true);
   const [shipDays, setShipDays] = useState(5);
 
@@ -278,6 +279,7 @@ function AdminSettings() {
       if (shipData.success && shipData.data) {
         setShipFreeAbove(shipData.data.freeShippingAbove);
         setShipCharge(shipData.data.shippingCharge);
+        setStateShippingFees({ tamilNadu: 30, pondicherry: 30, southStates: 60, otherStates: 80, ...(shipData.data.stateShippingFees || {}) });
         setShipCod(shipData.data.codEnabled);
         setShipDays(shipData.data.deliveryDays);
       }
@@ -368,6 +370,7 @@ function AdminSettings() {
         body: JSON.stringify({
           freeShippingAbove: shipFreeAbove,
           shippingCharge: shipCharge,
+          stateShippingFees,
           codEnabled: shipCod,
           deliveryDays: shipDays,
         }),
@@ -784,16 +787,20 @@ function AdminSettings() {
                 <form onSubmit={handleSaveShipping} className="space-y-4 text-sm text-[#2c2623]">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold uppercase tracking-wider text-[#6e5d53]">
-                        Shipping charge (₹)
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        value={shipCharge}
-                        onChange={(e) => setShipCharge(+e.target.value)}
-                        className="w-full rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] px-3.5 py-3 outline-none focus:border-[#d4af37]"
-                      />
+                      <label className="text-xs font-bold uppercase tracking-wider text-[#6e5d53]">Tamil Nadu — ₹ per item</label>
+                      <input type="number" min="0" required value={stateShippingFees.tamilNadu} onChange={(e) => setStateShippingFees({ ...stateShippingFees, tamilNadu: Math.max(0, +e.target.value) })} className="w-full rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] px-3.5 py-3 outline-none focus:border-[#d4af37]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-[#6e5d53]">Puducherry — ₹ per item</label>
+                      <input type="number" min="0" required value={stateShippingFees.pondicherry} onChange={(e) => setStateShippingFees({ ...stateShippingFees, pondicherry: Math.max(0, +e.target.value) })} className="w-full rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] px-3.5 py-3 outline-none focus:border-[#d4af37]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-[#6e5d53]">Karnataka, Kerala, Telangana & Andhra Pradesh — ₹ per item</label>
+                      <input type="number" min="0" required value={stateShippingFees.southStates} onChange={(e) => setStateShippingFees({ ...stateShippingFees, southStates: Math.max(0, +e.target.value) })} className="w-full rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] px-3.5 py-3 outline-none focus:border-[#d4af37]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-[#6e5d53]">Other / North Indian states — ₹ per item</label>
+                      <input type="number" min="0" required value={stateShippingFees.otherStates} onChange={(e) => setStateShippingFees({ ...stateShippingFees, otherStates: Math.max(0, +e.target.value) })} className="w-full rounded-xl border border-[#e8dfd8] bg-[#fbfaf7] px-3.5 py-3 outline-none focus:border-[#d4af37]" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold uppercase tracking-wider text-[#6e5d53]">
