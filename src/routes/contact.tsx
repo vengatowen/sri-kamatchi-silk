@@ -211,11 +211,9 @@ function ContactPage() {
                       Address
                     </h4>
                     <p className="text-sm font-medium text-foreground mt-1">
-                      12A, Sannathi Street,
+                      26/85D3, Gandhinagar, Nallikadai Street,
                       <br />
-                      Near Kamakshi Amman Temple,
-                      <br />
-                      Kanchipuram, Tamil Nadu - 631501
+                      Salem Main Road, Elampillai - 637502
                     </p>
                   </div>
                 </li>
@@ -230,12 +228,12 @@ function ContactPage() {
                     </h4>
                     <p className="text-sm font-semibold text-foreground mt-1">
                       <a
-                        href="https://wa.me/919443210987"
+                        href="https://wa.me/7200170633"
                         target="_blank"
                         rel="noreferrer"
                         className="hover:underline"
                       >
-                        Contact on WhatsApp
+                        7200170633 · Contact on WhatsApp
                       </a>
                     </p>
                   </div>
@@ -275,27 +273,28 @@ function ContactPage() {
               </ul>
             </div>
 
-            {/* Google Map Mock UI */}
+            {/* Google Maps for the updated Elampillai shop address */}
             <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
               <div className="bg-secondary/60 px-5 py-4 flex items-center justify-between border-b border-border">
                 <span className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  Kanchipuram Showroom
+                  Elampillai Shop
                 </span>
-                <span className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+                <MapPin size={16} className="text-primary" />
               </div>
-              <div className="relative aspect-[4/3] bg-champagne/40 grid place-content-center text-center p-6">
-                <MapPin size={32} className="mx-auto text-primary animate-bounce mb-3" />
-                <p className="text-xs font-bold text-foreground uppercase tracking-wide">
-                  Interactive Location Guide
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-1.5 max-w-[200px] mx-auto leading-relaxed">
-                  Located just 200m from the historic Kamakshi Amman Temple entrance
-                </p>
+              <iframe
+                title="Sri Kamatchi Silks shop location in Elampillai"
+                src="https://maps.google.com/maps?q=26%2F85D3%2C%20Gandhinagar%2C%20Nallikadai%20Street%2C%20Salem%20Main%20Road%2C%20Elampillai%20637502&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                className="block aspect-[4/3] w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+              <div className="p-4">
                 <a
-                  href="https://maps.google.com"
+                  href="https://www.google.com/maps/search/?api=1&query=26%2F85D3%2C%20Gandhinagar%2C%20Nallikadai%20Street%2C%20Salem%20Main%20Road%2C%20Elampillai%20637502"
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 rounded-full border border-primary/20 bg-card px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-primary shadow-soft hover:bg-secondary"
+                  className="inline-flex rounded-full border border-primary/20 bg-card px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary shadow-soft hover:bg-secondary"
                 >
                   Open in Google Maps
                 </a>
