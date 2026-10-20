@@ -162,7 +162,7 @@ function CartPage() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Shipping</dt>
-                  <dd className="font-medium">{cartSubtotal === 0 ? "—" : rate === null ? "Select state" : formatINR(shipping)}</dd>
+                  <dd className="font-medium">{cartSubtotal === 0 ? "—" : cartSubtotal >= freeShippingAbove ? "Free" : rate === null ? "Select state" : formatINR(shipping)}</dd>
                 </div>
                 <div className="flex justify-between border-t border-border pt-3 text-base">
                   <dt className="font-semibold">Total</dt>
