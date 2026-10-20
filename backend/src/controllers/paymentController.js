@@ -2,6 +2,13 @@ const prisma = require("../config/prisma");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 
+const getStateShippingFee = (state) => {
+  const normalized = String(state || "").trim().toLowerCase();
+  if (normalized === "tamil nadu") return 40;
+  if (["karnataka", "kerala", "telangana", "andhra pradesh"].includes(normalized)) return 60;
+  return normalized ? 80 : null;
+};
+
 // Create a real Razorpay Order
 const createRazorpayOrder = async (req, res) => {
   try {
@@ -40,9 +47,13 @@ const createRazorpayOrder = async (req, res) => {
     }
 
     // 3. Load dynamic settings
-    let shippingSettings = await prisma.shippingSettings.findFirst();
-    const freeShippingCap = shippingSettings ? shippingSettings.freeShippingAbove : 4999;
-    const standardShippingFee = shippingSettings ? shippingSettings.shippingCharge : 99;
+    const stateShippingFee = getStateShippingFee(state);
+    if (stateShippingFee === null) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid Indian state to calculate shipping.",
+      });
+    }
 
     let paymentSettings = await prisma.paymentSettings.findFirst();
     if (!paymentSettings || !paymentSettings.razorpayEnabled) {
@@ -105,8 +116,8 @@ const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    // 5. Apply India Shipping Fee Logic
-    const shippingFee = subtotal >= freeShippingCap ? 0 : standardShippingFee;
+    // 5. Calculate shipping from the delivery state, matching the cart.
+    const shippingFee = subtotal === 0 ? 0 : stateShippingFee;
     const totalAmount = subtotal + shippingFee;
 
     // 6. Create internal order in DB in PENDING payment status
