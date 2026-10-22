@@ -61,14 +61,18 @@ const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    const keyId = paymentSettings.razorpayKeyId || process.env.RAZORPAY_KEY_ID;
-    const keySecret = paymentSettings.razorpaySecret || process.env.RAZORPAY_KEY_SECRET;
-    console.log("RAZORPAY KEYS LOADED IN CONTROLLER:", {
-      keyId,
-      keySecret: keySecret ? "configured (length: " + keySecret.length + ")" : "missing",
-    });
+    // Prefer deployment environment variables so stale placeholder values in the
+    // admin settings cannot override the credentials configured for this backend.
+    const keyId = process.env.RAZORPAY_KEY_ID || paymentSettings.razorpayKeyId;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || paymentSettings.razorpaySecret;
+    const hasPlaceholderCredentials =
+      !keyId ||
+      !keySecret ||
+      keyId === "rzp_test_Kamatchi90281" ||
+      keySecret.includes("dummy") ||
+      keySecret === "dummysecretvalue12345678";
 
-    if (!keyId || !keySecret) {
+    if (hasPlaceholderCredentials) {
       return res.status(400).json({
         success: false,
         message: "Razorpay configuration keys are missing on the server.",
@@ -148,39 +152,20 @@ const createRazorpayOrder = async (req, res) => {
 
     // 7. Create Razorpay order in paise
     const amountInPaise = Math.round(totalAmount * 100);
-    let rzpOrder;
-
-    try {
-      if (
-        keyId === "rzp_test_Kamatchi90281" ||
-        keySecret === "dummysecretvalue12345678" ||
-        keySecret === "dummysecret" ||
-        keyId.includes("modified")
-      ) {
-        throw new Error("DUMMY_CREDENTIALS");
-      }
-      const options = {
-        amount: amountInPaise,
-        currency: "INR",
-        receipt: order.id,
-      };
-      rzpOrder = await razorpay.orders.create(options);
-    } catch (apiError) {
-      const isAuthError = apiError.statusCode === 401 || apiError.message === "DUMMY_CREDENTIALS";
-      const isTestKey = keyId.startsWith("rzp_test");
-      if (isAuthError && isTestKey) {
-        console.warn(
-          "Razorpay API call failed due to authentication. Falling back to simulated Razorpay Order ID for sandbox developer testing.",
-        );
-        rzpOrder = {
-          id: `order_dummy_${Math.random().toString(36).substring(2, 15)}`,
-          amount: amountInPaise,
-          currency: "INR",
-        };
-      } else {
-        throw apiError;
-      }
+    if (!Number.isSafeInteger(amountInPaise) || amountInPaise < 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment amount must be at least ₹1.00.",
+      });
     }
+
+    // Never fabricate an order ID after an API/authentication failure. Checkout
+    // must only receive a real order created by Razorpay.
+    const rzpOrder = await razorpay.orders.create({
+      amount: amountInPaise,
+      currency: "INR",
+      receipt: order.id,
+    });
 
     // 8. Save Razorpay Order ID to database Order
     const updatedOrder = await prisma.order.update({
@@ -238,32 +223,10 @@ const verifyPayment = async (req, res) => {
       .update(signData.toString())
       .digest("hex");
 
-    const isDummy =
-      !keySecret ||
-      keySecret.includes("dummy") ||
-      keySecret.startsWith("dummy") ||
-      keySecret === "dummysecretvalue12345678";
-    const isValidSignature = isDummy
-      ? razorpay_signature === "simulated_signature_hash_value" ||
-        expectedSignature === razorpay_signature
-      : expectedSignature === razorpay_signature;
-
-    if (!isValidSignature) {
-      // Mark internal order as Failed if possible, but keep cart intact
-      await prisma.order.updateMany({
-        where: { razorpayOrderId: razorpay_order_id },
-        data: { paymentStatus: "Failed" },
-      });
-
-      return res.status(400).json({
-        success: false,
-        message: "Razorpay signature verification failed. Invalid payment.",
-      });
-    }
-
-    // 3. Signature is valid! Finalize order inside a transaction
+    // Resolve the internal order before changing its status; only its owner may
+    // complete checkout for it.
     const order = await prisma.order.findFirst({
-      where: { razorpayOrderId: razorpay_order_id },
+      where: { razorpayOrderId: razorpay_order_id, userId: req.user.id },
       include: {
         orderItems: {
           include: {
@@ -276,9 +239,29 @@ const verifyPayment = async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Associated order not found in database",
+        message: "Associated order not found for this account",
       });
     }
+
+    const expectedBuffer = Buffer.from(expectedSignature, "hex");
+    const receivedBuffer = Buffer.from(razorpay_signature, "hex");
+    const isValidSignature =
+      expectedBuffer.length === receivedBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+
+    if (!isValidSignature) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: "Failed" },
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: "Razorpay signature verification failed. Invalid payment.",
+      });
+    }
+
+    // Signature is valid; finalize the order inside a transaction.
 
     if (order.paymentStatus === "Paid") {
       return res.status(200).json({
