@@ -226,7 +226,7 @@ Order Details:
 
         const options = {
           key: rzpData.keyId,
-          amount: Math.round(total * 100),
+          amount: Math.round(Number(rzpData.amount) * 100),
           currency: rzpData.currency,
           name: "Sri Kamatchi Silk",
           description: "Premium Handloom Saree Order",
@@ -281,6 +281,14 @@ Order Details:
         };
 
         const rzp = new (window as any).Razorpay(options);
+        rzp.on("payment.failed", (response: any) => {
+          setIsPlacing(false);
+          const description =
+            response?.error?.description ||
+            response?.error?.reason ||
+            "The test payment could not be completed. Please try again.";
+          toast.error("Payment failed", { description });
+        });
         rzp.open();
       }
     } catch (err: any) {
