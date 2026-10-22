@@ -207,7 +207,7 @@ const verifyPayment = async (req, res) => {
 
     // 1. Fetch payment settings to get Key Secret
     const paymentSettings = await prisma.paymentSettings.findFirst();
-    const keySecret = paymentSettings?.razorpaySecret || process.env.RAZORPAY_KEY_SECRET;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || paymentSettings?.razorpaySecret;
 
     if (!keySecret) {
       return res.status(400).json({
