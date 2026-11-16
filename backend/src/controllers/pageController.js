@@ -36,7 +36,7 @@ const getPages = async (req, res) => {
           title: "Contact Us",
           slug: "contact",
           content:
-            "Flagship Kanchipuram Showroom hours: 09:00 AM - 09:00 PM. Contact our support on WhatsApp at https://wa.me/919443210987...",
+            "Flagship Kanchipuram Showroom hours: 09:00 AM - 09:00 PM. Contact our support on WhatsApp at https://wa.me/917305459199...",
           isPublished: true,
         },
         {
