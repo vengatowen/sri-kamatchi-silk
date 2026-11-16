@@ -50,7 +50,7 @@ export function Navbar() {
   };
 
   const contactNumber = String(header?.contactNumber || "").replace(/\D/g, "");
-  const whatsappUrl = contactNumber ? `https://wa.me/${contactNumber}` : "https://wa.me/919443210987";
+  const whatsappUrl = contactNumber ? `https://wa.me/${contactNumber}` : "https://wa.me/917305459199";
   const navLabels = header?.navLabels || {};
   const navLinks = (Array.isArray(header?.navLinks) && header.navLinks.length > 0
     ? header.navLinks
