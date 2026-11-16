@@ -57,7 +57,7 @@ export function AnnouncementBar() {
           { text: "Up to 30% off on the Wedding Collection", enabled: true },
           {
             text: "Contact us on WhatsApp for styling & custom orders",
-            link: "https://wa.me/919443210987",
+            link: "https://wa.me/917305459199",
             enabled: true,
           },
         ];
