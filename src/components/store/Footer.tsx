@@ -158,7 +158,7 @@ export function Footer() {
               <li className="flex items-center gap-3">
                 <span className="shrink-0 text-gold font-extrabold text-[10px] bg-secondary px-1.5 py-0.5 rounded border border-gold/30">WA</span>
                 <a
-                  href="https://wa.me/919443210987"
+                  href="https://wa.me/917305459199"
                   target="_blank"
                   rel="noreferrer"
                   className="hover:text-primary transition-colors font-medium hover:underline"
