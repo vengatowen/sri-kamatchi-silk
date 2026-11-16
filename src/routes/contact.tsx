@@ -228,12 +228,12 @@ function ContactPage() {
                     </h4>
                     <p className="text-sm font-semibold text-foreground mt-1">
                       <a
-                        href="https://wa.me/7200170633"
+                        href="https://wa.me/+917305459199"
                         target="_blank"
                         rel="noreferrer"
                         className="hover:underline"
                       >
-                        7200170633 · Contact on WhatsApp
+                        +917305459199 · Contact on WhatsApp
                       </a>
                     </p>
                   </div>
