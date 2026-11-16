@@ -14,7 +14,7 @@ async function main() {
       { label: "Celebrity Silks", to: "/category/celebrity-silks" },
       { label: "Silk Cotton", to: "/category/cotton-silks" },
       { label: "Shop", to: "/shop" },
-      { label: "Contact WhatsApp", to: "https://wa.me/919443210987" }
+      { label: "Contact WhatsApp", to: "https://wa.me/917305459199" }
     ],
     contactNumber: ""
   };
