@@ -1023,7 +1023,7 @@ function HomePage() {
               <span className="text-xs font-semibold text-foreground group-hover:text-primary">Shipping Policy</span>
               <span className="text-[10px] text-muted-foreground">Pan-India insured delivery</span>
             </Link>
-            <a href="https://wa.me/919443210987" target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 group">
+            <a href="https://wa.me/917305459199" target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 group">
               <div className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-primary group-hover:bg-gold group-hover:text-gold-foreground transition-all">
                 <Icons.Headphones size={18} />
               </div>
