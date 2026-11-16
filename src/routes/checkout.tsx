@@ -116,7 +116,7 @@ Order Details:
 - City: ${city || "N/A"}`;
 
     const encodedText = encodeURIComponent(text);
-    const whatsappUrl = `https://wa.me/919443210987?text=${encodedText}`;
+    const whatsappUrl = `https://wa.me/917305459199?text=${encodedText}`;
     window.open(whatsappUrl, "_blank");
   };
 
