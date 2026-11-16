@@ -198,7 +198,7 @@ const getHomeSettings = async (req, res) => {
       { text: "Up to 30% off on the Wedding Collection", link: "", enabled: true },
       {
         text: "Contact us on WhatsApp for styling & custom orders",
-        link: "https://wa.me/919443210987",
+        link: "https://wa.me/917305459199",
         enabled: true,
       },
     ];
@@ -213,7 +213,7 @@ const getHomeSettings = async (req, res) => {
         { label: "Celebrity Silks", to: "/category/celebrity-silks" },
         { label: "Silk Cotton", to: "/category/cotton-silks" },
         { label: "Shop", to: "/shop" },
-        { label: "Contact WhatsApp", to: "https://wa.me/919443210987" },
+        { label: "Contact WhatsApp", to: "https://wa.me/917305459199" },
       ],
       contactNumber: "",
     };
